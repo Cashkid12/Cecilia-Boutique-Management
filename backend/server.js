@@ -22,7 +22,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: ['https://cecilia-frontend.vercel.app', 'http://localhost:3000', 'http://localhost:5173'],
+  origin: true, // Allow all origins temporarily - update with your actual Vercel URL
   credentials: true
 }));
 app.use(express.json());
