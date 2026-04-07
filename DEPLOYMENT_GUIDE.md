@@ -37,11 +37,16 @@ In Render dashboard, add these environment variables:
 
 ```
 NODE_ENV=production
-MONGODB_URI=mongodb+srv://cashmid:zD38W3aE1vG01IR@cluster0.u4oi3eo.mongodb.net/cecilia?retryWrites=true&w=majority&appName=Cluster0
-JWT_SECRET=cecilia_super_secret_jwt_key_2024_secure
+MONGO_URI=your_mongodb_connection_string_here
+JWT_SECRET=your_secure_jwt_secret_key_here
 JWT_EXPIRE=7d
 PORT=5000
 ```
+
+**Important**: 
+- Use `MONGO_URI` (not `MONGODB_URI`) - this matches the backend code
+- Get your MongoDB URI from: MongoDB Atlas → Connect → Connect your application
+- Use a strong, random JWT_SECRET (at least 32 characters)
 
 ### Step 5: Deploy
 1. Click **"Create Web Service"**
