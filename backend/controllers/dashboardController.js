@@ -2,6 +2,7 @@ const Sale = require('../models/Sale');
 const Inventory = require('../models/Inventory');
 const Expense = require('../models/Expense');
 const User = require('../models/User');
+const stockService = require('../services/stockService');
 
 // @desc    Get comprehensive dashboard data
 // @route   GET /api/dashboard

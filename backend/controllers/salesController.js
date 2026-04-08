@@ -1,5 +1,7 @@
 const Sale = require('../models/Sale');
 const Inventory = require('../models/Inventory');
+const stockService = require('../services/stockService');
+const notificationService = require('../services/notificationService');
 
 // @desc    Record a new sale
 // @route   POST /api/sales
@@ -8,16 +10,18 @@ exports.recordSale = async (req, res) => {
   try {
     const { item, quantity, paymentMethod, customerName } = req.body;
 
-    // Find inventory item
-    const inventoryItem = await Inventory.findById(item);
-    if (!inventoryItem) {
-      return res.status(404).json({ message: 'Item not found' });
+    // Validate stock availability using stock service
+    const validation = await stockService.validateStockForSale(item, quantity);
+    
+    if (!validation.available) {
+      return res.status(400).json({ 
+        message: validation.message,
+        available: false 
+      });
     }
 
-    // Check stock availability
-    if (inventoryItem.quantity < quantity) {
-      return res.status(400).json({ message: 'Insufficient stock' });
-    }
+    // Find inventory item
+    const inventoryItem = validation.item;
 
     // Calculate sale details
     const sellingPrice = inventoryItem.sellingPrice;
@@ -29,6 +33,7 @@ exports.recordSale = async (req, res) => {
     const sale = await Sale.create({
       item,
       itemName: inventoryItem.itemName,
+      category: inventoryItem.category,
       quantity,
       sellingPrice,
       buyingPrice,
@@ -40,9 +45,11 @@ exports.recordSale = async (req, res) => {
       customerName
     });
 
-    // Update inventory stock
-    inventoryItem.quantity -= quantity;
-    await inventoryItem.save();
+    // Update inventory using stock service (triggers notifications & alerts)
+    await stockService.deductStock(item, quantity, sale._id);
+
+    // Create sale notification
+    await notificationService.createSaleNotification(sale);
 
     res.status(201).json(sale);
   } catch (error) {

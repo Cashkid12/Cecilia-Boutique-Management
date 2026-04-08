@@ -22,7 +22,13 @@ import {
   Smartphone,
   X,
   Check,
-  AlertCircle
+  AlertCircle,
+  Shirt,
+  Briefcase,
+  Crown,
+  Layers,
+  Footprints,
+  Star
 } from 'lucide-react';
 import {
   LineChart,
@@ -72,6 +78,21 @@ const Sales = () => {
   const [paymentFilter, setPaymentFilter] = useState('');
   const [chartPeriod, setChartPeriod] = useState('daily');
 
+  // Category-first sale flow
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [filteredInventory, setFilteredInventory] = useState([]);
+
+  const categories = [
+    'All Stock',
+    'Trousers',
+    'T-Shirts',
+    'Shirts',
+    'Dresses',
+    'Jackets',
+    'Shoes',
+    'Accessories'
+  ];
+
   const [saleForm, setSaleForm] = useState({
     item: '',
     quantity: 1,
@@ -82,9 +103,30 @@ const Sales = () => {
 
   const [refundReason, setRefundReason] = useState('');
 
+  // Category icon mapping
+  const categoryIcons = {
+    'Trousers': Briefcase,
+    'T-Shirts': Shirt,
+    'Shirts': Shirt,
+    'Dresses': Crown,
+    'Jackets': Layers,
+    'Shoes': Footprints,
+    'Accessories': Star,
+    'All Stock': Package
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Filter inventory by selected category
+  useEffect(() => {
+    if (selectedCategory === '' || selectedCategory === 'All Stock') {
+      setFilteredInventory(inventory);
+    } else {
+      setFilteredInventory(inventory.filter(item => item.category === selectedCategory));
+    }
+  }, [selectedCategory, inventory]);
 
   const fetchData = async () => {
     try {
@@ -550,8 +592,45 @@ const Sales = () => {
             </div>
 
             <form onSubmit={handleSubmitSale} className="space-y-4">
+              {/* Category Selection */}
               <div>
-                <label className="block text-sm font-medium text-dark mb-2">Select Item</label>
+                <label className="block text-sm font-medium text-dark mb-3">Select Category</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {categories.map((category) => {
+                    const Icon = categoryIcons[category] || Package;
+                    const isSelected = selectedCategory === category;
+                    return (
+                      <button
+                        key={category}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCategory(category);
+                          setSaleForm({ ...saleForm, item: '' }); // Reset item when category changes
+                        }}
+                        className={`p-3 rounded-xl border-2 transition-all duration-300 flex flex-col items-center gap-1 ${
+                          isSelected
+                            ? 'border-primary bg-primary-light shadow-md'
+                            : 'border-gray-200 hover:border-primary-light hover:bg-gray-50'
+                        }`}
+                      >
+                        <Icon size={20} className={isSelected ? 'text-primary-dark' : 'text-gray-600'} />
+                        <span className={`text-xs font-medium ${
+                          isSelected ? 'text-primary-dark' : 'text-gray-700'
+                        }`}>
+                          {category.replace('All Stock', 'All')}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-dark mb-2">
+                  Select Item {selectedCategory && selectedCategory !== 'All Stock' && (
+                    <span className="text-xs text-gray-500 font-normal">- {selectedCategory}</span>
+                  )}
+                </label>
                 <select
                   value={saleForm.item}
                   onChange={(e) => setSaleForm({ ...saleForm, item: e.target.value })}
@@ -559,12 +638,21 @@ const Sales = () => {
                   required
                 >
                   <option value="">Choose an item...</option>
-                  {inventory.filter(i => i.quantity > 0).map(item => (
-                    <option key={item._id} value={item._id}>
-                      {item.itemName} - KSh {item.sellingPrice} ({item.quantity} available)
-                    </option>
-                  ))}
+                  {filteredInventory
+                    .filter(i => i.quantity > 0)
+                    .map(item => (
+                      <option key={item._id} value={item._id}>
+                        {item.itemName} - KSh {item.sellingPrice} ({item.quantity} available)
+                        {item.subcategory && ` - ${item.subcategory}`}
+                      </option>
+                    ))}
                 </select>
+                {filteredInventory.filter(i => i.quantity > 0).length === 0 && (
+                  <p className="text-sm text-orange-600 mt-2 flex items-center gap-1">
+                    <AlertCircle size={14} />
+                    No items available in this category
+                  </p>
+                )}
               </div>
 
               {selectedItem && (

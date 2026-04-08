@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
-import { salesAPI, expenseAPI, inventoryAPI } from '../utils/api';
+import { salesAPI, expenseAPI, inventoryAPI, dashboardAPI } from '../utils/api';
 import {
   Download,
   FileText,
@@ -15,7 +15,13 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Package,
-  AlertTriangle
+  AlertTriangle,
+  Shirt,
+  Briefcase,
+  Crown,
+  Layers,
+  Footprints,
+  Star
 } from 'lucide-react';
 import {
   LineChart,
@@ -70,6 +76,21 @@ const Reports = () => {
   });
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [activeTab, setActiveTab] = useState('overview');
+  const [categorySummary, setCategorySummary] = useState(null);
+  const [bestCategory, setBestCategory] = useState(null);
+
+  // Category icon mapping
+  const categoryIcons = {
+    'Trousers': Briefcase,
+    'T-Shirts': Shirt,
+    'Shirts': Shirt,
+    'Dresses': Crown,
+    'Jackets': Layers,
+    'Shoes': Footprints,
+    'Accessories': Star
+  };
+
+  const categoryColors = ['#D6C2A1', '#B89B72', '#8B7355', '#A0522D', '#CD853F', '#DEB887', '#F5DEB3'];
 
   useEffect(() => {
     fetchReportData();
@@ -89,6 +110,20 @@ const Reports = () => {
         expenses: expenseRes.data,
         inventory: inventoryRes.data
       });
+
+      // Fetch category analytics
+      try {
+        const [categoryRes] = await Promise.all([
+          dashboardAPI.getCategorySummary()
+        ]);
+        setCategorySummary(categoryRes.data);
+        // Find best category by sales
+        if (categoryRes.data.salesByCategory && categoryRes.data.salesByCategory.length > 0) {
+          setBestCategory(categoryRes.data.salesByCategory[0]);
+        }
+      } catch (catError) {
+        console.log('Category analytics not available:', catError.message);
+      }
     } catch (error) {
       toast.error('Failed to load report data');
     } finally {
@@ -366,19 +401,52 @@ const Reports = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <div className="card p-6">
-              <h3 className="text-xl font-bold text-dark mb-6">Category Performance</h3>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-dark">Category Performance</h3>
+                {bestCategory && (
+                  <div className="px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm font-medium flex items-center gap-2">
+                    <TrendingUp size={16} />
+                    Best: {bestCategory.category}
+                  </div>
+                )}
+              </div>
               {categoryData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={categoryData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#F5EFE6" />
-                    <XAxis dataKey="category" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip formatter={(value) => `KSh ${value.toLocaleString()}`} />
-                    <Legend />
-                    <Bar dataKey="revenue" fill="#10B981" name="Revenue" />
-                    <Bar dataKey="profit" fill="#D6C2A1" name="Profit" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={categoryData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#F5EFE6" />
+                      <XAxis dataKey="category" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 12 }} />
+                      <Tooltip formatter={(value) => `KSh ${value.toLocaleString()}`} />
+                      <Legend />
+                      <Bar dataKey="revenue" fill="#10B981" name="Revenue" />
+                      <Bar dataKey="profit" fill="#D6C2A1" name="Profit" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                  {/* Category Stock Status */}
+                  {categorySummary && categorySummary.stockByCategory && (
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <h4 className="text-sm font-semibold text-dark mb-3">Current Stock by Category</h4>
+                      <div className="grid grid-cols-3 gap-3">
+                        {categorySummary.stockByCategory.slice(0, 6).map((cat, idx) => {
+                          const Icon = categoryIcons[cat.category] || Package;
+                          return (
+                            <div key={cat.category} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                              <Icon size={18} className="text-primary-dark" />
+                              <div className="flex-1">
+                                <p className="text-xs text-gray-600">{cat.category}</p>
+                                <p className="text-sm font-bold text-dark">{cat.totalItems} items</p>
+                              </div>
+                              {cat.lowStockCount > 0 && (
+                                <span className="text-xs text-orange-600 font-medium">{cat.lowStockCount} low</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="text-center py-12 text-gray-500">
                   <Package size={48} className="mx-auto mb-2 opacity-30" />

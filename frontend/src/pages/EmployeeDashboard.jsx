@@ -16,7 +16,12 @@ import {
   Wallet,
   Smartphone,
   CreditCard,
-  Hash
+  Hash,
+  Shirt,
+  Briefcase,
+  Crown,
+  Layers,
+  Footprints
 } from 'lucide-react';
 import {
   LineChart,
@@ -53,6 +58,18 @@ const EmployeeDashboard = () => {
   const [showSaleModal, setShowSaleModal] = useState(false);
   const [inventory, setInventory] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [categorySummary, setCategorySummary] = useState(null);
+
+  // Category icon mapping
+  const categoryIcons = {
+    'Trousers': Briefcase,
+    'T-Shirts': Shirt,
+    'Shirts': Shirt,
+    'Dresses': Crown,
+    'Jackets': Layers,
+    'Shoes': Footprints,
+    'Accessories': Star
+  };
 
   // Real-time dashboard data with auto-refresh
   const { data: dashboardData } = useDashboardData(
@@ -89,6 +106,14 @@ const EmployeeDashboard = () => {
       const employeeSales = salesRes.data.filter(sale => sale.worker === user._id);
       setMySales(employeeSales);
       setInventory(inventoryRes.data);
+
+      // Fetch category summary
+      try {
+        const categoryRes = await dashboardAPI.getCategorySummary();
+        setCategorySummary(categoryRes.data);
+      } catch (catError) {
+        console.log('Category data not available:', catError.message);
+      }
     } catch (error) {
       toast.error('Failed to load data');
     } finally {
@@ -240,6 +265,45 @@ const EmployeeDashboard = () => {
           color="bg-yellow-100 text-yellow-600"
         />
       </div>
+
+      {/* Quick Stock View by Category */}
+      {categorySummary && categorySummary.stockByCategory && categorySummary.stockByCategory.length > 0 && (
+        <div className="mb-8 animate-fade-in">
+          <h2 className="text-2xl font-bold text-dark mb-4 flex items-center gap-2">
+            <Package size={24} className="text-primary-dark" />
+            Quick Stock View
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+            {categorySummary.stockByCategory.map((cat) => {
+              const Icon = categoryIcons[cat.category] || Package;
+              const isLow = cat.lowStockCount > 0;
+              
+              return (
+                <div
+                  key={cat.category}
+                  className={`card p-4 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer ${
+                    isLow ? 'border-2 border-orange-300' : ''
+                  }`}
+                >
+                  <div className={`p-3 rounded-xl mb-3 ${
+                    isLow ? 'bg-orange-100 text-orange-600' : 'bg-primary text-dark'
+                  }`}>
+                    <Icon size={24} />
+                  </div>
+                  <h3 className="text-sm font-semibold text-dark mb-1 truncate">{cat.category}</h3>
+                  <p className="text-2xl font-bold text-dark mb-1">{cat.totalItems}</p>
+                  <p className="text-xs text-gray-600">{cat.productCount} products</p>
+                  {isLow && (
+                    <div className="mt-2 text-xs text-orange-600 font-medium">
+                      ⚠️ {cat.lowStockCount} low
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Quick Actions */}
       <div className="card p-6 mb-8">

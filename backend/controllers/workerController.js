@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const notificationService = require('../services/notificationService');
 const Sale = require('../models/Sale');
 
 // @desc    Get all workers
@@ -32,6 +33,9 @@ exports.addWorker = async (req, res) => {
       phone,
       role: 'employee'
     });
+
+    // Create worker notification
+    await notificationService.createWorkerNotification(worker);
 
     res.status(201).json(worker);
   } catch (error) {

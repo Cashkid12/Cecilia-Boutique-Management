@@ -1,4 +1,6 @@
 const Inventory = require('../models/Inventory');
+const { createNotification } = require('./notificationController');
+const Settings = require('../models/Settings');
 
 // @desc    Get all inventory items
 // @route   GET /api/inventory
@@ -47,6 +49,20 @@ exports.getInventoryItem = async (req, res) => {
 exports.addInventoryItem = async (req, res) => {
   try {
     const item = await Inventory.create(req.body);
+    
+    // Check if item is low stock
+    const settings = await Settings.findOne();
+    const threshold = settings?.lowStockThreshold || 3;
+    
+    if (item.quantity <= threshold) {
+      await createNotification(
+        'low_stock',
+        `Low stock: ${item.itemName} (${item.quantity} left)`,
+        item._id,
+        'Inventory'
+      );
+    }
+    
     res.status(201).json(item);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -68,6 +84,20 @@ exports.updateInventoryItem = async (req, res) => {
       req.body,
       { new: true, runValidators: true }
     );
+    
+    // Check if stock became low after update
+    const settings = await Settings.findOne();
+    const threshold = settings?.lowStockThreshold || 3;
+    
+    if (updatedItem.quantity <= threshold && item.quantity > threshold) {
+      await createNotification(
+        'low_stock',
+        `Low stock alert: ${updatedItem.itemName} (${updatedItem.quantity} left)`,
+        updatedItem._id,
+        'Inventory'
+      );
+    }
+    
     res.json(updatedItem);
   } catch (error) {
     res.status(500).json({ message: error.message });

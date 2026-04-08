@@ -10,6 +10,9 @@ exports.getDashboardOverview = async (req, res) => {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
+    const startOfYesterday = new Date(startOfDay);
+    startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+
     let query = {};
     if (req.user.role === 'employee') {
       query.worker = req.user._id;
@@ -27,6 +30,34 @@ exports.getDashboardOverview = async (req, res) => {
         }
       }
     ]);
+
+    // Yesterday's sales (for trend calculation)
+    const yesterdaySales = await Sale.aggregate([
+      { $match: { ...query, saleDate: { $gte: startOfYesterday, $lt: startOfDay } } },
+      {
+        $group: {
+          _id: null,
+          totalSales: { $sum: '$totalAmount' },
+          totalProfit: { $sum: '$profit' },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Calculate trends
+    const todayTotal = todaySales[0]?.totalSales || 0;
+    const yesterdayTotal = yesterdaySales[0]?.totalSales || 0;
+    const todayProfit = todaySales[0]?.totalProfit || 0;
+    const yesterdayProfit = yesterdaySales[0]?.totalProfit || 0;
+
+    // Calculate percentage change
+    const salesTrend = yesterdayTotal > 0 
+      ? Math.round(((todayTotal - yesterdayTotal) / yesterdayTotal) * 100)
+      : 0;
+    
+    const profitTrend = yesterdayProfit > 0
+      ? Math.round(((todayProfit - yesterdayProfit) / yesterdayProfit) * 100)
+      : 0;
 
     // Total stock
     const totalStock = await Inventory.aggregate([
@@ -51,7 +82,11 @@ exports.getDashboardOverview = async (req, res) => {
     });
 
     res.json({
-      todaySales: todaySales[0] || { totalSales: 0, totalProfit: 0, count: 0 },
+      todaySales: {
+        ...(todaySales[0] || { totalSales: 0, totalProfit: 0, count: 0 }),
+        trend: salesTrend,
+        profitTrend: profitTrend
+      },
       totalStock: totalStock[0] || { totalItems: 0, totalProducts: 0 },
       lowStockCount,
       activeWorkers

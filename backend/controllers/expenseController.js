@@ -1,4 +1,5 @@
 const Expense = require('../models/Expense');
+const notificationService = require('../services/notificationService');
 
 // @desc    Get all expenses
 // @route   GET /api/expenses
@@ -34,6 +35,10 @@ exports.addExpense = async (req, res) => {
       ...req.body,
       addedBy: req.user._id
     });
+    
+    // Create expense notification
+    await notificationService.createExpenseNotification(expense);
+    
     res.status(201).json(expense);
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -83,7 +83,13 @@ export const reportAPI = reportsAPI;
 // Dashboard API
 export const dashboardAPI = {
   getAll: () => api.get('/dashboard'),
-  getStats: () => api.get('/dashboard/stats')
+  getStats: () => api.get('/dashboard/stats'),
+  getCategorySummary: () => api.get('/dashboard/category-summary')
+};
+
+// Reports API - Category
+export const categoryAPI = {
+  getBestSelling: (period) => api.get('/dashboard/best-category', { params: { period } })
 };
 
 export default api;

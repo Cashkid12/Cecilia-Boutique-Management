@@ -1,584 +1,649 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
-import { authAPI } from '../utils/api';
 import {
-  User,
-  Camera,
-  Store,
+  Monitor,
+  Smartphone,
+  Tablet,
+  Globe,
+  LogOut,
+  Clock,
   Shield,
   Bell,
-  Palette,
-  Save,
-  Edit,
-  Eye,
-  EyeOff,
-  Phone,
+  ShoppingCart,
+  AlertTriangle,
+  Wallet,
+  FileText,
+  Calendar,
   Mail,
-  MapPin,
-  Clock,
-  DollarSign,
-  LogOut,
-  Monitor,
-  Moon,
-  Sun
+  CheckCircle,
+  XCircle,
+  Activity,
+  User,
+  Key,
+  Package,
+  Trash2,
+  Save,
+  Loader2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Settings = () => {
-  const { user, updateUser } = useAuth();
-  const { theme, toggleTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState('profile');
-  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState('sessions');
   
-  const [profile, setProfile] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    shopName: 'Cecilia Boutique'
-  });
+  // Session state
+  const [sessions, setSessions] = useState([]);
+  const [currentSession, setCurrentSession] = useState(null);
+  const [recentActivity, setRecentActivity] = useState([]);
 
-  const [shopSettings, setShopSettings] = useState({
-    shopName: 'Cecilia Boutique',
-    location: '',
-    businessPhone: '',
-    currency: 'KSh',
-    timezone: 'Africa/Nairobi'
-  });
-
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
-
-  const [notifications, setNotifications] = useState({
+  // Notification preferences state
+  const [preferences, setPreferences] = useState({
     salesAlerts: true,
     lowStockAlerts: true,
     expenseAlerts: false,
-    dailyReports: true
+    dailyReports: false,
+    weeklyReports: true,
+    monthlyReports: true,
+    emailNotifications: true,
+    inAppNotifications: true
   });
 
-  const handleProfileUpdate = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  useEffect(() => {
+    fetchSessions();
+    fetchPreferences();
+  }, []);
+
+  const fetchSessions = async () => {
     try {
-      await authAPI.updateProfile(profile);
-      updateUser(profile);
-      toast.success('Profile updated successfully');
+      // Mock sessions - in production, fetch from backend
+      const mockSessions = [
+        {
+          id: '1',
+          device: 'Chrome on Windows',
+          browser: 'Chrome',
+          os: 'Windows',
+          location: 'Nairobi, Kenya',
+          ip: '192.168.1.1',
+          startTime: new Date(Date.now() - 3600000).toISOString(),
+          lastActivity: new Date().toISOString(),
+          isActive: true,
+          isCurrent: true,
+          icon: Monitor
+        },
+        {
+          id: '2',
+          device: 'Safari on iPhone',
+          browser: 'Safari',
+          os: 'iOS',
+          location: 'Nairobi, Kenya',
+          ip: '192.168.1.2',
+          startTime: new Date(Date.now() - 86400000).toISOString(),
+          lastActivity: new Date(Date.now() - 7200000).toISOString(),
+          isActive: true,
+          isCurrent: false,
+          icon: Smartphone
+        }
+      ];
+
+      setSessions(mockSessions);
+      setCurrentSession(mockSessions.find(s => s.isCurrent));
+
+      // Mock recent activity
+      const mockActivity = [
+        { id: '1', action: 'Logged in', details: 'Chrome on Windows', timestamp: new Date(Date.now() - 3600000).toISOString(), icon: Monitor, type: 'login' },
+        { id: '2', action: 'Password changed', details: 'Security update', timestamp: new Date(Date.now() - 259200000).toISOString(), icon: Key, type: 'security' },
+        { id: '3', action: 'Profile updated', details: 'Email address changed', timestamp: new Date(Date.now() - 604800000).toISOString(), icon: User, type: 'profile' },
+        { id: '4', action: 'Stock updated', details: 'Updated Black Trouser quantity', timestamp: new Date(Date.now() - 86400000).toISOString(), icon: Package, type: 'inventory' },
+        { id: '5', action: 'Sale recorded', details: 'KSh 2,500 sale', timestamp: new Date(Date.now() - 172800000).toISOString(), icon: ShoppingCart, type: 'sale' }
+      ];
+
+      setRecentActivity(mockActivity);
     } catch (error) {
-      toast.error('Failed to update profile');
+      toast.error('Failed to load sessions');
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePasswordChange = async (e) => {
-    e.preventDefault();
+  const fetchPreferences = async () => {
+    try {
+      // Mock preferences - in production, fetch from backend
+      const mockPrefs = {
+        salesAlerts: true,
+        lowStockAlerts: true,
+        expenseAlerts: false,
+        dailyReports: false,
+        weeklyReports: true,
+        monthlyReports: true,
+        emailNotifications: true,
+        inAppNotifications: true
+      };
+      setPreferences(mockPrefs);
+    } catch (error) {
+      console.log('Failed to load preferences');
+    }
+  };
+
+  const handlePreferenceChange = async (key, value) => {
+    const updatedPreferences = { ...preferences, [key]: value };
+    setPreferences(updatedPreferences);
     
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
-
-    if (passwordForm.newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
-      return;
-    }
-
-    setLoading(true);
+    setSaving(true);
     try {
-      // TODO: Implement password change endpoint
-      toast.success('Password changed successfully');
-      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      // Mock save - in production, save to backend
+      await new Promise(resolve => setTimeout(resolve, 500));
+      toast.success('Preferences updated');
     } catch (error) {
-      toast.error('Failed to change password');
+      toast.error('Failed to update preferences');
+      setPreferences(preferences); // Revert on error
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  const handleNotificationToggle = (key) => {
-    setNotifications(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-    toast.success('Notification preferences updated');
+  const handleLogoutSession = async (sessionId) => {
+    try {
+      // Mock logout - in production, call backend API
+      setSessions(sessions.filter(s => s.id !== sessionId));
+      toast.success('Session terminated');
+    } catch (error) {
+      toast.error('Failed to terminate session');
+    }
   };
 
-  const handleThemeChange = (newTheme) => {
-    toggleTheme(newTheme);
-    toast.success(`${newTheme.charAt(0).toUpperCase() + newTheme.slice(1)} theme activated`);
+  const handleLogoutAllSessions = async () => {
+    if (!window.confirm('Are you sure you want to log out of all other sessions?')) return;
+    
+    try {
+      // Mock logout all - in production, call backend API
+      setSessions(sessions.filter(s => s.isCurrent));
+      toast.success('All other sessions terminated');
+    } catch (error) {
+      toast.error('Failed to terminate sessions');
+    }
   };
 
-  const tabs = [
-    { id: 'profile', label: 'Profile', icon: User },
-    { id: 'shop', label: 'Shop', icon: Store },
-    { id: 'security', label: 'Security', icon: Shield },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'theme', label: 'Theme', icon: Palette }
-  ];
+  const formatTimeAgo = (timestamp) => {
+    const now = new Date();
+    const date = new Date(timestamp);
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  };
+
+  const formatDateTime = (timestamp) => {
+    return new Date(timestamp).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout title="Settings">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
+            <p className="mt-4 text-gray-600">Loading settings...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
-    <DashboardLayout title="Settings & Profile">
+    <DashboardLayout title="Settings">
+      {/* Page Header */}
       <div className="mb-8 animate-fade-in">
-        <h1 className="text-3xl md:text-4xl font-bold text-dark mb-2">Settings & Profile</h1>
-        <p className="text-gray-600">Manage account, shop details, and security</p>
+        <h1 className="text-3xl md:text-4xl font-bold text-dark mb-2">Settings</h1>
+        <p className="text-gray-600">Manage your sessions and notification preferences</p>
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-        {tabs.map(tab => (
+      <div className="mb-6">
+        <div className="flex gap-2 border-b border-gray-200">
           <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-colors whitespace-nowrap ${
-              activeTab === tab.id
-                ? 'bg-primary text-dark'
-                : 'bg-white text-gray-600 hover:bg-gray-100'
+            onClick={() => setActiveTab('sessions')}
+            className={`px-6 py-3 font-medium transition-all border-b-2 ${
+              activeTab === 'sessions'
+                ? 'border-primary text-primary-dark'
+                : 'border-transparent text-gray-600 hover:text-dark'
             }`}
           >
-            <tab.icon size={18} />
-            {tab.label}
+            <div className="flex items-center gap-2">
+              <Shield size={18} />
+              <span>Active Sessions</span>
+            </div>
           </button>
-        ))}
+          <button
+            onClick={() => setActiveTab('notifications')}
+            className={`px-6 py-3 font-medium transition-all border-b-2 ${
+              activeTab === 'notifications'
+                ? 'border-primary text-primary-dark'
+                : 'border-transparent text-gray-600 hover:text-dark'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Bell size={18} />
+              <span>Notifications</span>
+            </div>
+          </button>
+        </div>
       </div>
 
-      {/* Profile Tab */}
-      {activeTab === 'profile' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1">
-            <div className="card p-6 text-center">
-              <div className="relative inline-block mb-4">
-                <div className="w-32 h-32 rounded-full bg-primary flex items-center justify-center text-dark font-bold text-5xl mx-auto">
-                  {profile.name.charAt(0).toUpperCase()}
+      {/* Active Sessions Tab */}
+      {activeTab === 'sessions' && (
+        <div className="space-y-6 animate-fade-in">
+          {/* Current Session */}
+          {currentSession && (
+            <div className="card p-6 border-2 border-primary-light bg-primary-light/30">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-primary text-dark rounded-xl">
+                    <currentSession.icon size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-dark">Current Session</h3>
+                    <p className="text-sm text-gray-600">{currentSession.device}</p>
+                  </div>
                 </div>
-                <button className="absolute bottom-0 right-0 p-2 bg-primary-dark text-white rounded-full hover:bg-dark transition-colors">
-                  <Camera size={18} />
+                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold flex items-center gap-1">
+                  <CheckCircle size={12} />
+                  Active
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-600 mb-1">Location</p>
+                  <p className="font-medium text-dark">{currentSession.location}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600 mb-1">Started</p>
+                  <p className="font-medium text-dark">{formatTimeAgo(currentSession.startTime)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600 mb-1">Last Activity</p>
+                  <p className="font-medium text-dark">{formatTimeAgo(currentSession.lastActivity)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600 mb-1">IP Address</p>
+                  <p className="font-medium text-dark font-mono text-xs">{currentSession.ip}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Other Sessions */}
+          {sessions.filter(s => !s.isCurrent).length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-dark">Other Active Sessions</h3>
+                <button
+                  onClick={handleLogoutAllSessions}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all text-sm font-medium"
+                >
+                  <LogOut size={16} />
+                  <span>Log Out All</span>
                 </button>
               </div>
-              <h3 className="text-xl font-bold text-dark mb-1">{profile.name}</h3>
-              <p className="text-sm text-gray-600 mb-2">{profile.email}</p>
-              <span className="inline-block px-3 py-1 text-xs rounded-full bg-primary-light text-primary-dark font-medium capitalize">
-                {user?.role}
-              </span>
-            </div>
-          </div>
 
-          <div className="lg:col-span-2">
-            <div className="card p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-dark">Personal Information</h3>
-              </div>
-              <form onSubmit={handleProfileUpdate} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-dark mb-2">Full Name</label>
-                    <div className="relative">
-                      <User size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                      <input
-                        type="text"
-                        value={profile.name}
-                        onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                        className="input-field pl-10"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-dark mb-2">Email</label>
-                    <div className="relative">
-                      <Mail size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                      <input
-                        type="email"
-                        value={profile.email}
-                        onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                        className="input-field pl-10"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-dark mb-2">Phone</label>
-                    <div className="relative">
-                      <Phone size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                      <input
-                        type="tel"
-                        value={profile.phone}
-                        onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                        className="input-field pl-10"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-dark mb-2">Shop Name</label>
-                    <div className="relative">
-                      <Store size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                      <input
-                        type="text"
-                        value={profile.shopName}
-                        onChange={(e) => setProfile({ ...profile, shopName: e.target.value })}
-                        className="input-field pl-10"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="flex justify-end pt-4 border-t">
-                  <button type="submit" className="btn-primary flex items-center gap-2" disabled={loading}>
-                    <Save size={18} />
-                    {loading ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {sessions.filter(s => !s.isCurrent).map((session) => {
+                  const Icon = session.icon || Monitor;
+                  return (
+                    <div
+                      key={session.id}
+                      className="card p-5 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-gray-100 text-gray-600 rounded-lg group-hover:bg-primary group-hover:text-dark transition-colors">
+                            <Icon size={20} />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-dark">{session.device}</p>
+                            <p className="text-xs text-gray-600">{session.location}</p>
+                          </div>
+                        </div>
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                          session.isActive
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {session.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
 
-      {/* Shop Settings Tab */}
-      {activeTab === 'shop' && (
-        <div className="card p-6">
-          <h3 className="text-xl font-bold text-dark mb-6">Shop Settings</h3>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-dark mb-2">Shop Name</label>
-                <div className="relative">
-                  <Store size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    value={shopSettings.shopName}
-                    onChange={(e) => setShopSettings({ ...shopSettings, shopName: e.target.value })}
-                    className="input-field pl-10"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-dark mb-2">Business Phone</label>
-                <div className="relative">
-                  <Phone size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="tel"
-                    value={shopSettings.businessPhone}
-                    onChange={(e) => setShopSettings({ ...shopSettings, businessPhone: e.target.value })}
-                    className="input-field pl-10"
-                  />
-                </div>
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-dark mb-2">Shop Location</label>
-                <div className="relative">
-                  <MapPin size={18} className="absolute left-3 top-3 text-gray-400" />
-                  <textarea
-                    value={shopSettings.location}
-                    onChange={(e) => setShopSettings({ ...shopSettings, location: e.target.value })}
-                    className="input-field pl-10"
-                    rows="3"
-                    placeholder="Enter shop address"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-dark mb-2">Currency</label>
-                <div className="relative">
-                  <DollarSign size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <select
-                    value={shopSettings.currency}
-                    onChange={(e) => setShopSettings({ ...shopSettings, currency: e.target.value })}
-                    className="input-field pl-10"
-                  >
-                    <option value="KSh">KSh - Kenyan Shilling</option>
-                    <option value="USD">USD - US Dollar</option>
-                    <option value="EUR">EUR - Euro</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-dark mb-2">Timezone</label>
-                <div className="relative">
-                  <Clock size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <select
-                    value={shopSettings.timezone}
-                    onChange={(e) => setShopSettings({ ...shopSettings, timezone: e.target.value })}
-                    className="input-field pl-10"
-                  >
-                    <option value="Africa/Nairobi">East Africa Time (Nairobi)</option>
-                    <option value="UTC">UTC</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end pt-4 border-t">
-              <button className="btn-primary flex items-center gap-2">
-                <Save size={18} />
-                Save Settings
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                      <div className="space-y-2 text-sm mb-4">
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Clock size={14} />
+                          <span>Started {formatTimeAgo(session.startTime)}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Activity size={14} />
+                          <span>Last active {formatTimeAgo(session.lastActivity)}</span>
+                        </div>
+                      </div>
 
-      {/* Security Tab */}
-      {activeTab === 'security' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <button
+                        onClick={() => handleLogoutSession(session.id)}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all text-sm font-medium"
+                      >
+                        <LogOut size={14} />
+                        <span>Log Out</span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {sessions.filter(s => !s.isCurrent).length === 0 && (
+            <div className="text-center py-12 bg-white rounded-2xl border-2 border-dashed border-gray-300">
+              <Shield size={48} className="mx-auto mb-3 text-gray-300" />
+              <h3 className="text-lg font-bold text-dark mb-2">No Other Active Sessions</h3>
+              <p className="text-gray-600">You are only logged in on this device</p>
+            </div>
+          )}
+
+          {/* Recent Activity Timeline */}
           <div className="card p-6">
             <h3 className="text-xl font-bold text-dark mb-6 flex items-center gap-2">
-              <Shield size={24} className="text-primary-dark" />
-              Change Password
+              <Activity size={20} className="text-primary-dark" />
+              Recent Activity
             </h3>
-            <form onSubmit={handlePasswordChange} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-dark mb-2">Current Password</label>
-                <input
-                  type="password"
-                  value={passwordForm.currentPassword}
-                  onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                  className="input-field"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-dark mb-2">New Password</label>
-                <input
-                  type="password"
-                  value={passwordForm.newPassword}
-                  onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                  className="input-field"
-                  placeholder="Minimum 6 characters"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-dark mb-2">Confirm Password</label>
-                <input
-                  type="password"
-                  value={passwordForm.confirmPassword}
-                  onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                  className="input-field"
-                  required
-                />
-              </div>
-              <button type="submit" className="btn-primary w-full" disabled={loading}>
-                {loading ? 'Updating...' : 'Update Password'}
-              </button>
-            </form>
-          </div>
 
-          <div className="space-y-6">
-            <div className="card p-6">
-              <h3 className="text-lg font-bold text-dark mb-4">Active Sessions</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-green-50 rounded-xl border border-green-200">
-                  <div className="flex items-center gap-3">
-                    <Monitor size={20} className="text-green-600" />
-                    <div>
-                      <p className="text-sm font-medium text-dark">Current Session</p>
-                      <p className="text-xs text-gray-600">Started 2 hours ago</p>
+            {recentActivity.length > 0 ? (
+              <div className="space-y-4">
+                {recentActivity.map((activity, index) => {
+                  const Icon = activity.icon || Activity;
+                  const getIconColor = () => {
+                    switch (activity.type) {
+                      case 'login': return 'bg-blue-100 text-blue-600';
+                      case 'security': return 'bg-red-100 text-red-600';
+                      case 'profile': return 'bg-purple-100 text-purple-600';
+                      case 'inventory': return 'bg-orange-100 text-orange-600';
+                      case 'sale': return 'bg-green-100 text-green-600';
+                      default: return 'bg-gray-100 text-gray-600';
+                    }
+                  };
+
+                  return (
+                    <div
+                      key={activity.id}
+                      className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                    >
+                      <div className={`p-2 rounded-lg ${getIconColor()}`}>
+                        <Icon size={18} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-dark">{activity.action}</p>
+                        <p className="text-sm text-gray-600">{activity.details}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-gray-600">{formatTimeAgo(activity.timestamp)}</p>
+                        <p className="text-xs text-gray-500">{formatDateTime(activity.timestamp)}</p>
+                      </div>
                     </div>
-                  </div>
-                  <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-600 font-medium">Active</span>
-                </div>
+                  );
+                })}
               </div>
-            </div>
-
-            <div className="card p-6">
-              <h3 className="text-lg font-bold text-dark mb-4">Recent Activity</h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-primary mt-2"></div>
-                  <div>
-                    <p className="text-dark">Logged in from Chrome</p>
-                    <p className="text-xs text-gray-500">2 hours ago</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-gray-400 mt-2"></div>
-                  <div>
-                    <p className="text-dark">Password changed</p>
-                    <p className="text-xs text-gray-500">3 days ago</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-gray-400 mt-2"></div>
-                  <div>
-                    <p className="text-dark">Profile updated</p>
-                    <p className="text-xs text-gray-500">1 week ago</p>
-                  </div>
-                </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Activity size={48} className="mx-auto mb-2 opacity-30" />
+                <p>No recent activity found</p>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}
 
       {/* Notifications Tab */}
       {activeTab === 'notifications' && (
-        <div className="card p-6">
-          <h3 className="text-xl font-bold text-dark mb-6">Notification Preferences</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-green-100 rounded-xl">
-                  <DollarSign size={20} className="text-green-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-dark">Sales Alerts</p>
-                  <p className="text-sm text-gray-600">Get notified for every sale</p>
-                </div>
-              </div>
-              <button
-                onClick={() => handleNotificationToggle('salesAlerts')}
-                className={`relative w-14 h-7 rounded-full transition-colors ${
-                  notifications.salesAlerts ? 'bg-primary' : 'bg-gray-300'
-                }`}
-              >
-                <div className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${
-                  notifications.salesAlerts ? 'left-7' : 'left-0.5'
-                }`}></div>
-              </button>
+        <div className="space-y-6 animate-fade-in">
+          {/* Notification Preferences */}
+          <div className="card p-6">
+            <div className="mb-6">
+              <h3 className="text-xl font-bold text-dark mb-2 flex items-center gap-2">
+                <Bell size={20} className="text-primary-dark" />
+                Notification Preferences
+              </h3>
+              <p className="text-gray-600">
+                Choose which notifications you want to receive via email or in-app alerts
+              </p>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-orange-100 rounded-xl">
-                  <Bell size={20} className="text-orange-600" />
+            <div className="space-y-4">
+              {/* Sales Alerts */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                <div className="flex items-start gap-3 flex-1">
+                  <div className="p-2 bg-green-100 text-green-600 rounded-lg">
+                    <ShoppingCart size={20} />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-dark">Sales Alerts</p>
+                    <p className="text-sm text-gray-600">Get notified for every sale</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium text-dark">Low Stock Alerts</p>
-                  <p className="text-sm text-gray-600">Alert when items are low</p>
-                </div>
+                <button
+                  onClick={() => handlePreferenceChange('salesAlerts', !preferences.salesAlerts)}
+                  className={`relative w-14 h-7 rounded-full transition-colors ${
+                    preferences.salesAlerts ? 'bg-primary' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
+                      preferences.salesAlerts ? 'translate-x-7' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
               </div>
-              <button
-                onClick={() => handleNotificationToggle('lowStockAlerts')}
-                className={`relative w-14 h-7 rounded-full transition-colors ${
-                  notifications.lowStockAlerts ? 'bg-primary' : 'bg-gray-300'
-                }`}
-              >
-                <div className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${
-                  notifications.lowStockAlerts ? 'left-7' : 'left-0.5'
-                }`}></div>
-              </button>
-            </div>
 
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-red-100 rounded-xl">
-                  <DollarSign size={20} className="text-red-600" />
+              {/* Low Stock Alerts */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                <div className="flex items-start gap-3 flex-1">
+                  <div className="p-2 bg-orange-100 text-orange-600 rounded-lg">
+                    <AlertTriangle size={20} />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-dark">Low Stock Alerts</p>
+                    <p className="text-sm text-gray-600">Alert when items are running low</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium text-dark">Expense Alerts</p>
-                  <p className="text-sm text-gray-600">High expense notifications</p>
-                </div>
+                <button
+                  onClick={() => handlePreferenceChange('lowStockAlerts', !preferences.lowStockAlerts)}
+                  className={`relative w-14 h-7 rounded-full transition-colors ${
+                    preferences.lowStockAlerts ? 'bg-primary' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
+                      preferences.lowStockAlerts ? 'translate-x-7' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
               </div>
-              <button
-                onClick={() => handleNotificationToggle('expenseAlerts')}
-                className={`relative w-14 h-7 rounded-full transition-colors ${
-                  notifications.expenseAlerts ? 'bg-primary' : 'bg-gray-300'
-                }`}
-              >
-                <div className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${
-                  notifications.expenseAlerts ? 'left-7' : 'left-0.5'
-                }`}></div>
-              </button>
-            </div>
 
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-100 rounded-xl">
-                  <Mail size={20} className="text-blue-600" />
+              {/* Expense Alerts */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                <div className="flex items-start gap-3 flex-1">
+                  <div className="p-2 bg-red-100 text-red-600 rounded-lg">
+                    <Wallet size={20} />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-dark">Expense Alerts</p>
+                    <p className="text-sm text-gray-600">High expense notifications</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium text-dark">Daily Reports</p>
-                  <p className="text-sm text-gray-600">Email summary every day</p>
-                </div>
+                <button
+                  onClick={() => handlePreferenceChange('expenseAlerts', !preferences.expenseAlerts)}
+                  className={`relative w-14 h-7 rounded-full transition-colors ${
+                    preferences.expenseAlerts ? 'bg-primary' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
+                      preferences.expenseAlerts ? 'translate-x-7' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
               </div>
-              <button
-                onClick={() => handleNotificationToggle('dailyReports')}
-                className={`relative w-14 h-7 rounded-full transition-colors ${
-                  notifications.dailyReports ? 'bg-primary' : 'bg-gray-300'
-                }`}
-              >
-                <div className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${
-                  notifications.dailyReports ? 'left-7' : 'left-0.5'
-                }`}></div>
-              </button>
+
+              {/* Daily Reports */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                <div className="flex items-start gap-3 flex-1">
+                  <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                    <FileText size={20} />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-dark">Daily Reports</p>
+                    <p className="text-sm text-gray-600">Email summary every day</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handlePreferenceChange('dailyReports', !preferences.dailyReports)}
+                  className={`relative w-14 h-7 rounded-full transition-colors ${
+                    preferences.dailyReports ? 'bg-primary' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
+                      preferences.dailyReports ? 'translate-x-7' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Weekly Reports */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                <div className="flex items-start gap-3 flex-1">
+                  <div className="p-2 bg-purple-100 text-purple-600 rounded-lg">
+                    <Calendar size={20} />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-dark">Weekly Reports</p>
+                    <p className="text-sm text-gray-600">Weekly business summary</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handlePreferenceChange('weeklyReports', !preferences.weeklyReports)}
+                  className={`relative w-14 h-7 rounded-full transition-colors ${
+                    preferences.weeklyReports ? 'bg-primary' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
+                      preferences.weeklyReports ? 'translate-x-7' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Monthly Reports */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                <div className="flex items-start gap-3 flex-1">
+                  <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
+                    <Mail size={20} />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-dark">Monthly Reports</p>
+                    <p className="text-sm text-gray-600">Monthly comprehensive report</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handlePreferenceChange('monthlyReports', !preferences.monthlyReports)}
+                  className={`relative w-14 h-7 rounded-full transition-colors ${
+                    preferences.monthlyReports ? 'bg-primary' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
+                      preferences.monthlyReports ? 'translate-x-7' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Theme Tab */}
-      {activeTab === 'theme' && (
-        <div className="card p-6">
-          <h3 className="text-xl font-bold text-dark mb-6">Appearance Settings</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button
-              onClick={() => handleThemeChange('light')}
-              className={`p-6 rounded-2xl border-2 transition-all hover:shadow-lg ${
-                theme === 'light' ? 'border-primary bg-primary-light' : 'border-gray-200 bg-white'
-              }`}
-            >
-              <div className="flex flex-col items-center gap-3">
-                <div className="p-4 bg-white rounded-xl shadow-sm">
-                  <Sun size={32} className="text-yellow-500" />
-                </div>
-                <div>
-                  <p className="font-bold text-dark">Light Mode</p>
-                  <p className="text-xs text-gray-600">Clean and bright</p>
-                </div>
-                {theme === 'light' && (
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                    <div className="w-3 h-3 bg-white rounded-full"></div>
+          {/* Notification Channels */}
+          <div className="card p-6">
+            <h3 className="text-xl font-bold text-dark mb-6">Notification Channels</h3>
+            <div className="space-y-4">
+              {/* Email Notifications */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                    <Mail size={20} />
                   </div>
-                )}
+                  <div>
+                    <p className="font-semibold text-dark">Email Notifications</p>
+                    <p className="text-sm text-gray-600">Receive notifications via email</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handlePreferenceChange('emailNotifications', !preferences.emailNotifications)}
+                  className={`relative w-14 h-7 rounded-full transition-colors ${
+                    preferences.emailNotifications ? 'bg-primary' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
+                      preferences.emailNotifications ? 'translate-x-7' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
               </div>
-            </button>
 
-            <button
-              onClick={() => handleThemeChange('dark')}
-              className={`p-6 rounded-2xl border-2 transition-all hover:shadow-lg ${
-                theme === 'dark' ? 'border-primary bg-primary-light' : 'border-gray-200 bg-white'
-              }`}
-            >
-              <div className="flex flex-col items-center gap-3">
-                <div className="p-4 bg-dark rounded-xl shadow-sm">
-                  <Moon size={32} className="text-white" />
-                </div>
-                <div>
-                  <p className="font-bold text-dark">Dark Mode</p>
-                  <p className="text-xs text-gray-600">Easy on the eyes</p>
-                </div>
-                {theme === 'dark' && (
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                    <div className="w-3 h-3 bg-white rounded-full"></div>
+              {/* In-App Notifications */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-100 text-green-600 rounded-lg">
+                    <Bell size={20} />
                   </div>
-                )}
-              </div>
-            </button>
-
-            <button
-              onClick={() => handleThemeChange('beige')}
-              className={`p-6 rounded-2xl border-2 transition-all hover:shadow-lg ${
-                theme === 'beige' ? 'border-primary bg-primary-light' : 'border-gray-200 bg-white'
-              }`}
-            >
-              <div className="flex flex-col items-center gap-3">
-                <div className="p-4 bg-primary rounded-xl shadow-sm">
-                  <Palette size={32} className="text-white" />
-                </div>
-                <div>
-                  <p className="font-bold text-dark">Beige Accent</p>
-                  <p className="text-xs text-gray-600">Warm boutique feel</p>
-                </div>
-                {theme === 'beige' && (
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                    <div className="w-3 h-3 bg-white rounded-full"></div>
+                  <div>
+                    <p className="font-semibold text-dark">In-App Notifications</p>
+                    <p className="text-sm text-gray-600">Show notifications in the app</p>
                   </div>
-                )}
+                </div>
+                <button
+                  onClick={() => handlePreferenceChange('inAppNotifications', !preferences.inAppNotifications)}
+                  className={`relative w-14 h-7 rounded-full transition-colors ${
+                    preferences.inAppNotifications ? 'bg-primary' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
+                      preferences.inAppNotifications ? 'translate-x-7' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
               </div>
-            </button>
+            </div>
           </div>
+
+          {/* Save Button */}
+          {saving && (
+            <div className="flex items-center justify-center gap-2 p-4 bg-primary-light rounded-xl">
+              <Loader2 size={20} className="animate-spin text-dark" />
+              <span className="text-dark font-medium">Saving preferences...</span>
+            </div>
+          )}
         </div>
       )}
     </DashboardLayout>
