@@ -12,7 +12,11 @@ A professional clothing shop management web application built with React.js, Tai
 - **Expense Management**: Monitor business costs and operational spending
 - **Worker Management**: Employee performance tracking and account management
 - **Reports & Analytics**: Comprehensive profit/loss reports with charts
-- **Settings & Profile**: Customizable themes (Light, Dark, Beige)
+### Settings & Profile
+- **Active Sessions Management**: View and control all login sessions
+- **Notification Preferences**: Customize alerts for sales, stock, expenses
+- **Profile Management**: Update account details and password
+- **Email & In-App Notifications**: Toggle notification channels
 
 ### 🤖 Automated Notification & Email System
 - **Real-Time Notifications**: In-app notifications for all system events
@@ -289,6 +293,10 @@ MIT License
 ### Workers
 - `POST /api/workers` - Add worker (triggers notification)
 - `GET /api/workers` - Get all workers
+
+### Category Analytics
+- `GET /api/dashboard/category-summary` - Stock summary by category
+- `GET /api/dashboard/best-category` - Best selling category analytics
 
 ## Security Features
 
