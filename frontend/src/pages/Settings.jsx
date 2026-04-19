@@ -39,6 +39,7 @@ import toast from 'react-hot-toast';
 const Settings = () => {
   const { user } = useAuth();
   const { isInstalled, isIOS, handleInstall } = usePWAInstall();
+  const [showIOSInstructions, setShowIOSInstructions] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
@@ -1069,13 +1070,62 @@ const Settings = () => {
                 </div>
 
                 {!isInstalled && (
-                  <button
-                    onClick={handleInstall}
-                    className="w-full px-4 py-3 bg-primary text-dark rounded-xl hover:bg-primary-dark transition-all font-medium flex items-center justify-center gap-2 mb-4 shadow-md"
-                  >
-                    <Smartphone size={18} />
-                    {isIOS ? 'Add to Home Screen' : 'Install App'}
-                  </button>
+                  <>
+                    <button
+                      onClick={async () => {
+                        const result = await handleInstall();
+                        if (result === 'ios') {
+                          setShowIOSInstructions(true);
+                        }
+                      }}
+                      className="w-full px-4 py-3 bg-primary text-dark rounded-xl hover:bg-primary-dark transition-all font-medium flex items-center justify-center gap-2 mb-4 shadow-md"
+                    >
+                      <Smartphone size={18} />
+                      {isIOS ? 'Add to Home Screen' : 'Install App'}
+                    </button>
+                    
+                    {/* iOS Instructions Modal */}
+                    {showIOSInstructions && (
+                      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end sm:items-center justify-center p-4 animate-fade-in">
+                        <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xl font-bold text-dark flex items-center gap-2">
+                              <Smartphone size={20} className="text-primary-dark" />
+                              Install on iPhone
+                            </h3>
+                            <button
+                              onClick={() => setShowIOSInstructions(false)}
+                              className="p-1 text-gray-400 hover:text-gray-600"
+                            >
+                              <X size={20} />
+                            </button>
+                          </div>
+
+                          <ol className="space-y-4 text-sm text-gray-700 mb-6">
+                            <li className="flex items-start gap-3">
+                              <span className="flex-shrink-0 w-7 h-7 bg-primary text-dark rounded-full flex items-center justify-center font-bold text-sm">1</span>
+                              <span>Tap the <strong>Share</strong> button 📤 at the bottom of Safari</span>
+                            </li>
+                            <li className="flex items-start gap-3">
+                              <span className="flex-shrink-0 w-7 h-7 bg-primary text-dark rounded-full flex items-center justify-center font-bold text-sm">2</span>
+                              <span>Scroll down and tap <strong>"Add to Home Screen"</strong></span>
+                            </li>
+                            <li className="flex items-start gap-3">
+                              <span className="flex-shrink-0 w-7 h-7 bg-primary text-dark rounded-full flex items-center justify-center font-bold text-sm">3</span>
+                              <span>Tap <strong>"Add"</strong> in the top right corner</span>
+                            </li>
+                          </ol>
+
+                          <button
+                            onClick={() => setShowIOSInstructions(false)}
+                            className="w-full px-4 py-3 bg-primary text-dark rounded-xl hover:bg-primary-dark transition-all font-medium"
+                          >
+                            Got it!
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <div className="space-y-2 text-sm text-gray-600">

@@ -54,23 +54,39 @@ export const usePWAInstall = () => {
 
   const handleInstall = useCallback(async () => {
     if (!deferredPrompt) {
-      return false;
+      console.log('[PWA] Install not available yet - browser may need to meet PWA criteria');
+      console.log('[PWA] Check: 1) Valid manifest.json 2) Service worker registered 3) HTTPS 4) Icons exist');
+      
+      // Show user-friendly message
+      if (isIOS) {
+        // iOS needs manual instructions
+        return 'ios';
+      } else {
+        // Chrome/Edge: Try to trigger anyway or show message
+        alert('To install this app:\n\n1. Click the install icon in your browser address bar (⊕ or 📥)\n2. Or use browser menu → "Install Cecilia Boutique"\n3. Make sure all app icons are generated (see /icons/ folder)');
+        return false;
+      }
     }
 
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
-      setDeferredPrompt(null);
-      setIsInstallable(false);
-      return true;
-    } else {
-      console.log('User dismissed the install prompt');
-      handleDismiss();
+    try {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      
+      if (outcome === 'accepted') {
+        console.log('[PWA] User accepted the install prompt');
+        setDeferredPrompt(null);
+        setIsInstallable(false);
+        return true;
+      } else {
+        console.log('[PWA] User dismissed the install prompt');
+        handleDismiss();
+        return false;
+      }
+    } catch (error) {
+      console.error('[PWA] Install error:', error);
       return false;
     }
-  }, [deferredPrompt]);
+  }, [deferredPrompt, isIOS]);
 
   const handleDismiss = useCallback(() => {
     setIsInstallable(false);
