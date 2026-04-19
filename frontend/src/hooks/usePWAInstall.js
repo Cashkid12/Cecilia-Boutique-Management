@@ -77,11 +77,19 @@ export const usePWAInstall = () => {
     }
 
     try {
+      // This triggers the native browser install dialog
       deferredPrompt.prompt();
+      
+      // Wait for user to respond to the prompt
       const { outcome } = await deferredPrompt.userChoice;
       
       if (outcome === 'accepted') {
         console.log('[PWA] User accepted the install prompt');
+        // Show success message
+        alert('✅ App installed successfully!\n\n' +
+              '• Check your desktop/taskbar for the Cecilia Boutique icon\n' +
+              '• The app will open in its own window\n' +
+              '• You can now use it like any other app!');
         setDeferredPrompt(null);
         setIsInstallable(false);
         return true;

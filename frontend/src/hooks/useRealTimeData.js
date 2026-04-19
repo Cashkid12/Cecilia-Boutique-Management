@@ -13,16 +13,26 @@ export const useRealTimeData = (apiFunction, dependencies = [], refreshInterval 
 
   const fetchData = useCallback(async () => {
     try {
-      setLoading(true);
+      // Only show loading on initial fetch, not on refreshes
+      if (!data) {
+        setLoading(true);
+      }
       setError(null);
       const response = await apiFunction();
-      setData(response.data);
+      
+      // Only update data if response is valid and not empty
+      if (response && response.data) {
+        setData(response.data);
+      }
+      // If response is empty/invalid, keep existing data
     } catch (err) {
+      console.error('[useRealTimeData] Fetch error:', err);
       setError(err.message || 'Failed to fetch data');
+      // Don't clear existing data on error - keep showing last known good data
     } finally {
       setLoading(false);
     }
-  }, [apiFunction]);
+  }, [apiFunction, data]);
 
   // Initial fetch
   useEffect(() => {

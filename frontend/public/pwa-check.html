@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PWA Check - Cecilia Boutique</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 40px; background: #F5EFE6; }
+    .card { background: white; padding: 20px; border-radius: 12px; margin: 20px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .status { padding: 10px; border-radius: 8px; margin: 10px 0; }
+    .pass { background: #d4edda; color: #155724; }
+    .fail { background: #f8d7da; color: #721c24; }
+    .warn { background: #fff3cd; color: #856404; }
+    button { background: #D6C2A1; color: #2E2E2E; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; margin: 10px 5px; }
+    button:hover { background: #B89B72; }
+  </style>
+</head>
+<body>
+  <h1>🔍 PWA Status Check</h1>
+  
+  <div class="card">
+    <h2>1. Manifest Check</h2>
+    <div id="manifest-status" class="status">Checking...</div>
+  </div>
+
+  <div class="card">
+    <h2>2. Service Worker Check</h2>
+    <div id="sw-status" class="status">Checking...</div>
+  </div>
+
+  <div class="card">
+    <h2>3. Icons Check</h2>
+    <div id="icons-status" class="status">Checking...</div>
+  </div>
+
+  <div class="card">
+    <h2>4. Install Capability</h2>
+    <div id="install-status" class="status">Checking...</div>
+  </div>
+
+  <div class="card">
+    <h2>Actions</h2>
+    <button onclick="window.location.href='http://localhost:5173'">Go to App</button>
+    <button onclick="location.reload()">Recheck</button>
+  </div>
+
+  <script>
+    // Check manifest
+    fetch('/manifest.json')
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('manifest-status').className = 'status pass';
+        document.getElementById('manifest-status').innerHTML = `
+          ✅ Manifest loaded!<br>
+          Name: ${data.name}<br>
+          Short name: ${data.short_name}<br>
+          Icons: ${data.icons.length} icons configured
+        `;
+      })
+      .catch(err => {
+        document.getElementById('manifest-status').className = 'status fail';
+        document.getElementById('manifest-status').innerHTML = `❌ Manifest failed to load: ${err.message}`;
+      });
+
+    // Check service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        if (registrations.length > 0) {
+          document.getElementById('sw-status').className = 'status pass';
+          document.getElementById('sw-status').innerHTML = `
+            ✅ Service Worker registered!<br>
+            Scope: ${registrations[0].scope}<br>
+            State: ${registrations[0].active ? 'Active' : 'Not active'}
+          `;
+        } else {
+          document.getElementById('sw-status').className = 'status warn';
+          document.getElementById('sw-status').innerHTML = `
+            ⚠️ No service worker registered yet.<br>
+            Try refreshing the main app page.
+          `;
+        }
+      });
+    } else {
+      document.getElementById('sw-status').className = 'status fail';
+      document.getElementById('sw-status').innerHTML = `❌ Service Workers not supported in this browser`;
+    }
+
+    // Check icons
+    const iconSizes = [72, 96, 128, 144, 152, 192, 384, 512];
+    let iconsLoaded = 0;
+    let iconsFailed = 0;
+
+    Promise.all(iconSizes.map(size => {
+      return fetch(`/icons/icon-${size}x${size}.png`)
+        .then(r => {
+          if (r.ok) iconsLoaded++;
+          else iconsFailed++;
+        })
+        .catch(() => iconsFailed++);
+    })).then(() => {
+      const statusEl = document.getElementById('icons-status');
+      if (iconsFailed === 0) {
+        statusEl.className = 'status pass';
+        statusEl.innerHTML = `✅ All ${iconsLoaded} icons loaded successfully!`;
+      } else {
+        statusEl.className = 'status fail';
+        statusEl.innerHTML = `❌ ${iconsFailed} icons failed to load, ${iconsLoaded} succeeded`;
+      }
+    });
+
+    // Check install capability
+    window.addEventListener('beforeinstallprompt', (e) => {
+      document.getElementById('install-status').className = 'status pass';
+      document.getElementById('install-status').innerHTML = `
+        ✅ Install prompt is available!<br>
+        The app can be installed. Go to the app and click "Install".
+      `;
+    });
+
+    // Timeout check
+    setTimeout(() => {
+      const installStatus = document.getElementById('install-status');
+      if (installStatus.innerHTML.includes('Checking')) {
+        installStatus.className = 'status warn';
+        installStatus.innerHTML = `
+          ⚠️ Install prompt not detected.<br>
+          This is normal in development mode. You can still install manually:<br>
+          • Chrome menu (⋮) → "Install Cecilia Boutique"<br>
+          • Or: More tools → Create shortcut → ✓ "Open as window"
+        `;
+      }
+    }, 3000);
+  </script>
+</body>
+</html>

@@ -129,9 +129,9 @@ exports.getSalesStats = async (req, res) => {
       query.worker = req.user._id;
     }
 
-    // Today's stats
+    // Today's stats - ONLY count completed sales
     const todaySales = await Sale.aggregate([
-      { $match: { ...query, saleDate: { $gte: startOfDay } } },
+      { $match: { ...query, saleDate: { $gte: startOfDay }, status: 'completed' } },
       {
         $group: {
           _id: null,
@@ -143,9 +143,9 @@ exports.getSalesStats = async (req, res) => {
       }
     ]);
 
-    // All time stats
+    // All time stats - ONLY count completed sales
     const allTimeStats = await Sale.aggregate([
-      { $match: query },
+      { $match: { ...query, status: 'completed' } },
       {
         $group: {
           _id: null,
@@ -157,12 +157,18 @@ exports.getSalesStats = async (req, res) => {
       }
     ]);
 
+    // ALWAYS return valid numbers, never null/undefined
     res.json({
       today: todaySales[0] || { totalSales: 0, totalProfit: 0, totalItems: 0, count: 0 },
       allTime: allTimeStats[0] || { totalSales: 0, totalProfit: 0, totalItems: 0, count: 0 }
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('[Sales Stats Error]:', error);
+    // Return zeros on error, don't break the frontend
+    res.json({
+      today: { totalSales: 0, totalProfit: 0, totalItems: 0, count: 0 },
+      allTime: { totalSales: 0, totalProfit: 0, totalItems: 0, count: 0 }
+    });
   }
 };
 
