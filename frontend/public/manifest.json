@@ -64,22 +64,6 @@
       "purpose": "maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/screenshots/dashboard-wide.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Dashboard view of Cecilia Boutique"
-    },
-    {
-      "src": "/screenshots/dashboard-mobile.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Mobile dashboard"
-    }
-  ],
   "categories": ["business", "shopping", "productivity"],
   "shortcuts": [
     {

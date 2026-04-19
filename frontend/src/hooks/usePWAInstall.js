@@ -62,8 +62,16 @@ export const usePWAInstall = () => {
         // iOS needs manual instructions
         return 'ios';
       } else {
-        // Chrome/Edge: Try to trigger anyway or show message
-        alert('To install this app:\n\n1. Click the install icon in your browser address bar (⊕ or 📥)\n2. Or use browser menu → "Install Cecilia Boutique"\n3. Make sure all app icons are generated (see /icons/ folder)');
+        // Chrome/Edge: Show helpful message
+        alert('📱 To Install This App:\n\n' +
+              'Option 1 (Easiest):\n' +
+              '• Look for the install icon (📥 or ⊕) in your browser address bar\n' +
+              '• Click it and select "Install"\n\n' +
+              'Option 2:\n' +
+              '• Click the browser menu (⋮)\n' +
+              '• Select "Install Cecilia Boutique"\n' +
+              '• Or: More tools → Create shortcut → ✓ "Open as window"\n\n' +
+              'Note: Make sure you\'re using Chrome or Edge browser.');
         return false;
       }
     }
