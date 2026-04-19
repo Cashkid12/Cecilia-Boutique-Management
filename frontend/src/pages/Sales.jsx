@@ -318,14 +318,14 @@ const Sales = () => {
         <StatCard
           icon={ShoppingCart}
           title="Sales Today"
-          value={`KSh ${totalSales.toLocaleString()}`}
+          value={`KSh ${(totalSales || 0).toLocaleString()}`}
           subtitle="Total revenue"
           color="bg-green-100 text-green-600"
         />
         <StatCard
           icon={TrendingUp}
           title="Profit"
-          value={`KSh ${totalProfit.toLocaleString()}`}
+          value={`KSh ${(totalProfit || 0).toLocaleString()}`}
           subtitle="Net profit"
           color="bg-blue-100 text-blue-600"
         />
@@ -346,7 +346,7 @@ const Sales = () => {
         <StatCard
           icon={DollarSign}
           title="Avg Sale"
-          value={`KSh ${Math.round(avgSaleValue).toLocaleString()}`}
+          value={`KSh ${Math.round(avgSaleValue || 0).toLocaleString()}`}
           subtitle="Per transaction"
           color="bg-pink-100 text-pink-600"
         />
@@ -476,10 +476,10 @@ const Sales = () => {
                       <td className="px-4 py-3 text-sm text-gray-600">{sale.quantity}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">KSh {sale.sellingPrice}</td>
                       <td className="px-4 py-3 text-sm font-semibold text-dark">
-                        KSh {sale.totalAmount.toLocaleString()}
+                        KSh {(sale.totalAmount || 0).toLocaleString()}
                       </td>
                       <td className="px-4 py-3 text-sm text-green-600 font-medium">
-                        KSh {sale.profit.toLocaleString()}
+                        KSh {(sale.profit || 0).toLocaleString()}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -799,13 +799,13 @@ const Sales = () => {
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Date</span>
                 <span className="font-medium text-dark">
-                  {new Date(selectedSale.saleDate).toLocaleString()}
+                  {selectedSale?.saleDate ? new Date(selectedSale.saleDate).toLocaleString() : 'N/A'}
                 </span>
               </div>
               <div className="border-t pt-3 flex justify-between">
                 <span className="font-bold text-dark">Total</span>
                 <span className="text-xl font-bold text-green-600">
-                  KSh {selectedSale.totalAmount.toLocaleString()}
+                  KSh {(selectedSale?.totalAmount || 0).toLocaleString()}
                 </span>
               </div>
             </div>

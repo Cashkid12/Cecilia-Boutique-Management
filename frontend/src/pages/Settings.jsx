@@ -32,7 +32,8 @@ import {
   Palette,
   Moon,
   Sun,
-  Info
+  Info,
+  Settings as SettingsIcon
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -44,16 +45,18 @@ const Settings = () => {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   
-  // Profile & Shop Info state
-  const [profileData, setProfileData] = useState({
-    name: user?.name || '',
+  // Profile state
+  const [profile, setProfile] = useState({
+    shopOwnerName: user?.name || '',
+    shopName: 'Cecilia Boutique',
     email: user?.email || '',
     phone: '',
-    shopName: 'Cecilia Boutique',
     logo: null
   });
-  const [passwordData, setPasswordData] = useState({
-    oldPassword: '',
+
+  // Password state
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
@@ -61,34 +64,64 @@ const Settings = () => {
   // Session state
   const [sessions, setSessions] = useState([]);
   const [currentSession, setCurrentSession] = useState(null);
-  const [recentActivity, setRecentActivity] = useState([]);
+  const [activities, setActivities] = useState([]);
 
   // Notification preferences state
-  const [preferences, setPreferences] = useState({
+  const [notifications, setNotifications] = useState({
     salesAlerts: true,
     lowStockAlerts: true,
-    expenseAlerts: false,
-    dailyReports: false,
-    weeklyReports: true,
-    monthlyReports: true,
+    expenseAlerts: true,
+    dailyReport: false,
+    weeklyReport: false,
+    monthlyReport: false,
     emailNotifications: true,
     inAppNotifications: true
   });
 
-  // Theme settings
-  const [themeSettings, setThemeSettings] = useState({
-    mode: 'light',
+  // Theme state
+  const [theme, setTheme] = useState({
+    darkMode: false,
     primaryColor: '#D6C2A1',
     accentColor: '#B89B72'
   });
 
+  // Lazy load data based on active tab
   useEffect(() => {
-    fetchSessions();
-    fetchPreferences();
-  }, []);
+    switch(activeTab) {
+      case 'general':
+        fetchProfile();
+        break;
+      case 'sessions':
+        fetchSessions();
+        fetchActivities();
+        break;
+      case 'notifications':
+        fetchNotificationPreferences();
+        break;
+      case 'appearance':
+        fetchTheme();
+        break;
+      default:
+        break;
+    }
+  }, [activeTab]);
+
+  // Data fetching functions
+  const fetchProfile = async () => {
+    try {
+      // TODO: GET /api/settings/profile
+      // const response = await api.get('/settings/profile');
+      // setProfile(response.data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+      setLoading(false);
+    }
+  };
 
   const fetchSessions = async () => {
     try {
+      // TODO: GET /api/settings/sessions
       // Mock sessions - in production, fetch from backend
       const mockSessions = [
         {
@@ -121,8 +154,17 @@ const Settings = () => {
 
       setSessions(mockSessions);
       setCurrentSession(mockSessions.find(s => s.isCurrent));
+    } catch (error) {
+      console.error('Failed to load sessions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      // Mock recent activity
+  const fetchActivities = async () => {
+    try {
+      // TODO: GET /api/settings/activity
+      // Mock recent activity - in production, fetch from backend
       const mockActivity = [
         { id: '1', action: 'Logged in', details: 'Chrome on Windows', timestamp: new Date(Date.now() - 3600000).toISOString(), icon: Monitor, type: 'login' },
         { id: '2', action: 'Password changed', details: 'Security update', timestamp: new Date(Date.now() - 259200000).toISOString(), icon: Key, type: 'security' },
@@ -131,45 +173,59 @@ const Settings = () => {
         { id: '5', action: 'Sale recorded', details: 'KSh 2,500 sale', timestamp: new Date(Date.now() - 172800000).toISOString(), icon: ShoppingCart, type: 'sale' }
       ];
 
-      setRecentActivity(mockActivity);
+      setActivities(mockActivity);
     } catch (error) {
-      toast.error('Failed to load sessions');
-    } finally {
-      setLoading(false);
+      console.error('Failed to load activities:', error);
     }
   };
 
-  const fetchPreferences = async () => {
+  const fetchNotificationPreferences = async () => {
     try {
+      // TODO: GET /api/settings/notifications
       // Mock preferences - in production, fetch from backend
       const mockPrefs = {
         salesAlerts: true,
         lowStockAlerts: true,
-        expenseAlerts: false,
-        dailyReports: false,
-        weeklyReports: true,
-        monthlyReports: true,
+        expenseAlerts: true,
+        dailyReport: false,
+        weeklyReport: false,
+        monthlyReport: false,
         emailNotifications: true,
         inAppNotifications: true
       };
-      setPreferences(mockPrefs);
+      setNotifications(mockPrefs);
     } catch (error) {
-      console.log('Failed to load preferences');
+      console.error('Failed to load preferences:', error);
     }
   };
 
+  const fetchTheme = async () => {
+    try {
+      // TODO: GET /api/settings/theme
+      // Load from localStorage or backend
+      const savedTheme = localStorage.getItem('themeSettings');
+      if (savedTheme) {
+        setTheme(JSON.parse(savedTheme));
+      }
+    } catch (error) {
+      console.error('Failed to load theme:', error);
+    }
+  };
+
+  // Handler functions
   const handlePreferenceChange = async (key, value) => {
-    const updatedPreferences = { ...preferences, [key]: value };
-    setPreferences(updatedPreferences);
+    const updatedNotifications = { ...notifications, [key]: value };
+    setNotifications(updatedNotifications);
     
     setSaving(true);
     try {
-      // Mock save - in production, save to backend
+      // TODO: PUT /api/settings/notifications
+      // await api.put('/settings/notifications', updatedNotifications);
       await new Promise(resolve => setTimeout(resolve, 500));
       toast.success('Preferences updated');
     } catch (error) {
       toast.error('Failed to update preferences');
-      setPreferences(preferences); // Revert on error
+      setNotifications(notifications); // Revert on error
     } finally {
       setSaving(false);
     }
@@ -177,7 +233,8 @@ const Settings = () => {
 
   const handleLogoutSession = async (sessionId) => {
     try {
-      // Mock logout - in production, call backend API
+      // TODO: DELETE /api/settings/sessions/:id
+      // await api.delete(`/settings/sessions/${sessionId}`);
       setSessions(sessions.filter(s => s.id !== sessionId));
       toast.success('Session terminated');
     } catch (error) {
@@ -189,7 +246,8 @@ const Settings = () => {
     if (!window.confirm('Are you sure you want to log out of all other sessions?')) return;
     
     try {
-      // Mock logout all - in production, call backend API
+      // TODO: POST /api/settings/sessions/logout-all
+      // await api.post('/settings/sessions/logout-all');
       setSessions(sessions.filter(s => s.isCurrent));
       toast.success('All other sessions terminated');
     } catch (error) {
@@ -199,20 +257,39 @@ const Settings = () => {
 
   const handleProfileSave = async () => {
     // Validation
-    if (!profileData.name || !profileData.email) {
-      toast.error('Name and email are required');
+    if (!profile.shopOwnerName || profile.shopOwnerName.trim().length < 2) {
+      toast.error('Shop owner name must be at least 2 characters');
+      return;
+    }
+
+    if (!profile.shopName || profile.shopName.trim().length < 2) {
+      toast.error('Shop name must be at least 2 characters');
+      return;
+    }
+
+    if (!profile.email) {
+      toast.error('Email is required');
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(profileData.email)) {
+    if (!emailRegex.test(profile.email)) {
       toast.error('Invalid email format');
       return;
     }
 
+    if (profile.phone && profile.phone.trim()) {
+      const phoneRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/;
+      if (!phoneRegex.test(profile.phone.trim())) {
+        toast.error('Invalid phone number format');
+        return;
+      }
+    }
+
     setSaving(true);
     try {
-      // Mock save - in production, save to backend
+      // TODO: PUT /api/settings/profile
+      // await api.put('/settings/profile', profile);
       await new Promise(resolve => setTimeout(resolve, 800));
       toast.success('Profile updated successfully');
     } catch (error) {
@@ -223,27 +300,29 @@ const Settings = () => {
   };
 
   const handlePasswordChange = async () => {
-    if (!passwordData.oldPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
-      toast.error('All password fields are required');
+    // Validation
+    if (!passwordForm.currentPassword) {
+      toast.error('Current password is required');
       return;
     }
 
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error('New passwords do not match');
+    if (!passwordForm.newPassword || passwordForm.newPassword.length < 6) {
+      toast.error('New password must be at least 6 characters');
       return;
     }
 
-    if (passwordData.newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error('Passwords do not match');
       return;
     }
 
     setSaving(true);
     try {
-      // Mock save - in production, save to backend
+      // TODO: PUT /api/settings/password
+      // await api.put('/settings/password', { password: passwordForm.newPassword });
       await new Promise(resolve => setTimeout(resolve, 800));
       toast.success('Password changed successfully');
-      setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (error) {
       toast.error('Failed to change password');
     } finally {
@@ -254,18 +333,43 @@ const Settings = () => {
   const handleLogoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file size (max 2MB)
       if (file.size > 2 * 1024 * 1024) {
         toast.error('Logo must be less than 2MB');
         return;
       }
+
+      // Validate file type
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error('Only PNG, JPG, and JPEG formats are allowed');
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
-        setProfileData({ ...profileData, logo: reader.result });
+        setProfile({ ...profile, logo: reader.result });
         toast.success('Logo uploaded');
       };
       reader.readAsDataURL(file);
     }
   };
+
+  // Toggle Switch Component
+  const ToggleSwitch = ({ enabled, onToggle }) => (
+    <button
+      onClick={onToggle}
+      className={`w-13 h-7 rounded-full transition-colors ${
+        enabled ? 'bg-[#D6C2A1]' : 'bg-gray-300'
+      }`}
+    >
+      <div
+        className={`w-6 h-6 bg-white rounded-full shadow-sm transition-transform ${
+          enabled ? 'translate-x-6' : 'translate-x-0.5'
+        }`}
+      />
+    </button>
+  );
 
   const formatTimeAgo = (timestamp) => {
     const now = new Date();
@@ -309,65 +413,66 @@ const Settings = () => {
     <DashboardLayout title="Settings">
       {/* Page Header */}
       <div className="mb-8 animate-fade-in">
-        <h1 className="text-3xl md:text-4xl font-bold text-dark mb-2">Settings</h1>
-        <p className="text-gray-600">Manage your sessions and notification preferences</p>
+        <div className="flex items-start gap-4 mb-2">
+          <div className="p-3 bg-primary/20 rounded-xl">
+            <SettingsIcon size={28} className="text-primary-dark" />
+          </div>
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-dark">Settings</h1>
+            <p className="text-gray-600 mt-1">Manage your shop, account, and preferences</p>
+          </div>
+        </div>
       </div>
 
       {/* Tab Navigation */}
-      <div className="mb-6 overflow-x-auto">
-        <div className="flex gap-2 border-b border-gray-200 min-w-max">
-          <button
-            onClick={() => setActiveTab('general')}
-            className={`px-6 py-3 font-medium transition-all border-b-2 ${
-              activeTab === 'general'
-                ? 'border-primary text-primary-dark'
-                : 'border-transparent text-gray-600 hover:text-dark'
-            }`}
-          >
-            <div className="flex items-center gap-2">
+      <div className="mb-8 animate-fade-in">
+        <div className="border-b border-gray-200">
+          <nav className="flex gap-0 -mb-px overflow-x-auto">
+            <button
+              onClick={() => setActiveTab('general')}
+              className={`flex items-center gap-2 px-5 py-3 font-medium text-sm transition-all border-b-2 whitespace-nowrap ${
+                activeTab === 'general'
+                  ? 'border-primary text-primary-dark'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
               <User size={18} />
               <span>General</span>
-            </div>
-          </button>
-          <button
-            onClick={() => setActiveTab('sessions')}
-            className={`px-6 py-3 font-medium transition-all border-b-2 ${
-              activeTab === 'sessions'
-                ? 'border-primary text-primary-dark'
-                : 'border-transparent text-gray-600 hover:text-dark'
-            }`}
-          >
-            <div className="flex items-center gap-2">
+            </button>
+            <button
+              onClick={() => setActiveTab('sessions')}
+              className={`flex items-center gap-2 px-5 py-3 font-medium text-sm transition-all border-b-2 whitespace-nowrap ${
+                activeTab === 'sessions'
+                  ? 'border-primary text-primary-dark'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
               <Shield size={18} />
               <span>Sessions</span>
-            </div>
-          </button>
-          <button
-            onClick={() => setActiveTab('notifications')}
-            className={`px-6 py-3 font-medium transition-all border-b-2 ${
-              activeTab === 'notifications'
-                ? 'border-primary text-primary-dark'
-                : 'border-transparent text-gray-600 hover:text-dark'
-            }`}
-          >
-            <div className="flex items-center gap-2">
+            </button>
+            <button
+              onClick={() => setActiveTab('notifications')}
+              className={`flex items-center gap-2 px-5 py-3 font-medium text-sm transition-all border-b-2 whitespace-nowrap ${
+                activeTab === 'notifications'
+                  ? 'border-primary text-primary-dark'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
               <Bell size={18} />
               <span>Notifications</span>
-            </div>
-          </button>
-          <button
-            onClick={() => setActiveTab('appearance')}
-            className={`px-6 py-3 font-medium transition-all border-b-2 ${
-              activeTab === 'appearance'
-                ? 'border-primary text-primary-dark'
-                : 'border-transparent text-gray-600 hover:text-dark'
-            }`}
-          >
-            <div className="flex items-center gap-2">
+            </button>
+            <button
+              onClick={() => setActiveTab('appearance')}
+              className={`flex items-center gap-2 px-5 py-3 font-medium text-sm transition-all border-b-2 whitespace-nowrap ${
+                activeTab === 'appearance'
+                  ? 'border-primary text-primary-dark'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
               <Palette size={18} />
               <span>Appearance</span>
-            </div>
-          </button>
+            </button>
+          </nav>
         </div>
       </div>
 
@@ -385,8 +490,8 @@ const Settings = () => {
               {/* Logo Upload */}
               <div className="flex items-center gap-6">
                 <div className="relative">
-                  {profileData.logo ? (
-                    <img src={profileData.logo} alt="Logo" className="w-24 h-24 rounded-2xl object-cover border-2 border-primary-light" />
+                  {profile.logo ? (
+                    <img src={profile.logo} alt="Logo" className="w-24 h-24 rounded-2xl object-cover border-2 border-primary-light" />
                   ) : (
                     <div className="w-24 h-24 rounded-2xl bg-primary-light flex items-center justify-center border-2 border-dashed border-primary">
                       <Store size={32} className="text-primary-dark" />
@@ -399,7 +504,7 @@ const Settings = () => {
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-dark">Shop Logo</p>
-                  <p className="text-sm text-gray-600">Upload your shop logo (max 2MB)</p>
+                  <p className="text-sm text-gray-600">Upload your shop logo (max 2MB, PNG/JPG)</p>
                 </div>
               </div>
 
@@ -409,8 +514,8 @@ const Settings = () => {
                   <label className="block text-sm font-medium text-dark mb-2">Shop Owner Name *</label>
                   <input
                     type="text"
-                    value={profileData.name}
-                    onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                    value={profile.shopOwnerName}
+                    onChange={(e) => setProfile({ ...profile, shopOwnerName: e.target.value })}
                     className="input-field"
                     placeholder="Enter your name"
                     required
@@ -420,8 +525,8 @@ const Settings = () => {
                   <label className="block text-sm font-medium text-dark mb-2">Shop Name *</label>
                   <input
                     type="text"
-                    value={profileData.shopName}
-                    onChange={(e) => setProfileData({ ...profileData, shopName: e.target.value })}
+                    value={profile.shopName}
+                    onChange={(e) => setProfile({ ...profile, shopName: e.target.value })}
                     className="input-field"
                     placeholder="Enter shop name"
                     required
@@ -431,8 +536,8 @@ const Settings = () => {
                   <label className="block text-sm font-medium text-dark mb-2">Email Address *</label>
                   <input
                     type="email"
-                    value={profileData.email}
-                    onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                    value={profile.email}
+                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
                     className="input-field"
                     placeholder="your@email.com"
                     required
@@ -444,8 +549,8 @@ const Settings = () => {
                     <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                     <input
                       type="tel"
-                      value={profileData.phone}
-                      onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                      value={profile.phone}
+                      onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
                       className="input-field pl-10"
                       placeholder="+254 712 345 678"
                     />
@@ -476,8 +581,8 @@ const Settings = () => {
                 <label className="block text-sm font-medium text-dark mb-2">Current Password *</label>
                 <input
                   type="password"
-                  value={passwordData.oldPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, oldPassword: e.target.value })}
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
                   className="input-field"
                   placeholder="Enter current password"
                 />
@@ -486,18 +591,19 @@ const Settings = () => {
                 <label className="block text-sm font-medium text-dark mb-2">New Password *</label>
                 <input
                   type="password"
-                  value={passwordData.newPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  value={passwordForm.newPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                   className="input-field"
-                  placeholder="Enter new password (min 6 characters)"
+                  placeholder="Enter new password"
                 />
+                <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-dark mb-2">Confirm New Password *</label>
                 <input
                   type="password"
-                  value={passwordData.confirmPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                   className="input-field"
                   placeholder="Confirm new password"
                 />
@@ -521,39 +627,41 @@ const Settings = () => {
         <div className="space-y-6 animate-fade-in">
           {/* Current Session */}
           {currentSession && (
-            <div className="card p-6 border-2 border-primary-light bg-primary-light/30">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-primary text-dark rounded-xl">
-                    <currentSession.icon size={24} />
+            <div>
+              <h3 className="text-lg font-bold text-dark mb-3">CURRENT SESSION (This Device)</h3>
+              <div className="bg-white border border-primary-light/50 rounded-2xl p-5">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-primary/20 text-primary-dark rounded-xl">
+                      <currentSession.icon size={24} />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-dark">{currentSession.device}</h4>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-dark">Current Session</h3>
-                    <p className="text-sm text-gray-600">{currentSession.device}</p>
-                  </div>
+                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold flex items-center gap-1">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    Active
+                  </span>
                 </div>
-                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold flex items-center gap-1">
-                  <CheckCircle size={12} />
-                  Active
-                </span>
-              </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div>
-                  <p className="text-gray-600 mb-1">Location</p>
-                  <p className="font-medium text-dark">{currentSession.location}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600 mb-1">Started</p>
-                  <p className="font-medium text-dark">{formatTimeAgo(currentSession.startTime)}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600 mb-1">Last Activity</p>
-                  <p className="font-medium text-dark">{formatTimeAgo(currentSession.lastActivity)}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600 mb-1">IP Address</p>
-                  <p className="font-medium text-dark font-mono text-xs">{currentSession.ip}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <span>📍</span>
+                    <span>{currentSession.location}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <span>🌐</span>
+                    <span className="font-mono text-xs">IP: {currentSession.ip}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <span>🕐</span>
+                    <span>Started: {formatDateTime(currentSession.startTime)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <span>⏱️</span>
+                    <span>Last active: {formatTimeAgo(currentSession.lastActivity)}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -563,32 +671,23 @@ const Settings = () => {
           {sessions.filter(s => !s.isCurrent).length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-dark">Other Active Sessions</h3>
-                <button
-                  onClick={handleLogoutAllSessions}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all text-sm font-medium"
-                >
-                  <LogOut size={16} />
-                  <span>Log Out All</span>
-                </button>
+                <h3 className="text-lg font-bold text-dark">OTHER ACTIVE SESSIONS</h3>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {sessions.filter(s => !s.isCurrent).map((session) => {
+              <div className="bg-white border border-primary-light/50 rounded-2xl p-5 space-y-4">
+                {sessions.filter(s => !s.isCurrent).map((session, index) => {
                   const Icon = session.icon || Monitor;
                   return (
-                    <div
-                      key={session.id}
-                      className="card p-5 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group"
-                    >
+                    <div key={session.id}>
+                      {index > 0 && <div className="border-t border-gray-200 my-4"></div>}
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 bg-gray-100 text-gray-600 rounded-lg group-hover:bg-primary group-hover:text-dark transition-colors">
+                          <div className="p-2 bg-gray-100 text-gray-600 rounded-lg">
                             <Icon size={20} />
                           </div>
                           <div>
                             <p className="font-semibold text-dark">{session.device}</p>
-                            <p className="text-xs text-gray-600">{session.location}</p>
+                            <p className="text-xs text-gray-600">📍 {session.location}</p>
                           </div>
                         </div>
                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
@@ -600,20 +699,20 @@ const Settings = () => {
                         </span>
                       </div>
 
-                      <div className="space-y-2 text-sm mb-4">
+                      <div className="space-y-1 text-sm mb-3 ml-11">
                         <div className="flex items-center gap-2 text-gray-600">
-                          <Clock size={14} />
-                          <span>Started {formatTimeAgo(session.startTime)}</span>
+                          <span>🕐</span>
+                          <span>Started: {formatDateTime(session.startTime)}</span>
                         </div>
                         <div className="flex items-center gap-2 text-gray-600">
-                          <Activity size={14} />
-                          <span>Last active {formatTimeAgo(session.lastActivity)}</span>
+                          <span>⏱️</span>
+                          <span>Last active: {formatTimeAgo(session.lastActivity)}</span>
                         </div>
                       </div>
 
                       <button
                         onClick={() => handleLogoutSession(session.id)}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all text-sm font-medium"
+                        className="ml-11 flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-red-50 hover:text-red-600 transition-all text-sm font-medium"
                       >
                         <LogOut size={14} />
                         <span>Log Out</span>
@@ -621,6 +720,17 @@ const Settings = () => {
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Log Out All Devices Button */}
+              <div className="mt-4">
+                <button
+                  onClick={handleLogoutAllSessions}
+                  className="flex items-center gap-2 px-6 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all font-medium shadow-md"
+                >
+                  <LogOut size={18} />
+                  <span>Log Out All Devices</span>
+                </button>
               </div>
             </div>
           )}
@@ -634,53 +744,51 @@ const Settings = () => {
           )}
 
           {/* Recent Activity Timeline */}
-          <div className="card p-6">
-            <h3 className="text-xl font-bold text-dark mb-6 flex items-center gap-2">
-              <Activity size={20} className="text-primary-dark" />
-              Recent Activity
-            </h3>
+          <div>
+            <h3 className="text-lg font-bold text-dark mb-4">RECENT ACTIVITY</h3>
+            <div className="bg-white border border-primary-light/50 rounded-2xl p-5">
+              {activities.length > 0 ? (
+                <div className="divide-y divide-gray-100">
+                  {activities.map((activity) => {
+                    const getIconEmoji = () => {
+                      switch (activity.type) {
+                        case 'login': return '🔑';
+                        case 'security': return '🔐';
+                        case 'profile': return '✏️';
+                        case 'inventory': return '📦';
+                        case 'sale': return '💰';
+                        default: return '📊';
+                      }
+                    };
 
-            {recentActivity.length > 0 ? (
-              <div className="space-y-4">
-                {recentActivity.map((activity, index) => {
-                  const Icon = activity.icon || Activity;
-                  const getIconColor = () => {
-                    switch (activity.type) {
-                      case 'login': return 'bg-blue-100 text-blue-600';
-                      case 'security': return 'bg-red-100 text-red-600';
-                      case 'profile': return 'bg-purple-100 text-purple-600';
-                      case 'inventory': return 'bg-orange-100 text-orange-600';
-                      case 'sale': return 'bg-green-100 text-green-600';
-                      default: return 'bg-gray-100 text-gray-600';
-                    }
-                  };
-
-                  return (
-                    <div
-                      key={activity.id}
-                      className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-                    >
-                      <div className={`p-2 rounded-lg ${getIconColor()}`}>
-                        <Icon size={18} />
+                    return (
+                      <div
+                        key={activity.id}
+                        className="py-3 first:pt-0 last:pb-0"
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className="text-lg">{getIconEmoji()}</span>
+                          <div className="flex-1">
+                            <p className="font-medium text-dark">{activity.action}</p>
+                            {activity.details && (
+                              <p className="text-sm text-gray-600 mt-0.5">{activity.details}</p>
+                            )}
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-sm text-gray-500">{formatTimeAgo(activity.timestamp)}</p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-dark">{activity.action}</p>
-                        <p className="text-sm text-gray-600">{activity.details}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium text-gray-600">{formatTimeAgo(activity.timestamp)}</p>
-                        <p className="text-xs text-gray-500">{formatDateTime(activity.timestamp)}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <Activity size={48} className="mx-auto mb-2 opacity-30" />
-                <p>No recent activity found</p>
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Activity size={48} className="mx-auto mb-2 opacity-30" />
+                  <p>No recent activity found</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -688,234 +796,168 @@ const Settings = () => {
       {/* Notifications Tab */}
       {activeTab === 'notifications' && (
         <div className="space-y-6 animate-fade-in">
-          {/* Notification Preferences */}
-          <div className="card p-6">
-            <div className="mb-6">
-              <h3 className="text-xl font-bold text-dark mb-2 flex items-center gap-2">
-                <Bell size={20} className="text-primary-dark" />
-                Notification Preferences
-              </h3>
-              <p className="text-gray-600">
-                Choose which notifications you want to receive via email or in-app alerts
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              {/* Sales Alerts */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                <div className="flex items-start gap-3 flex-1">
-                  <div className="p-2 bg-green-100 text-green-600 rounded-lg">
-                    <ShoppingCart size={20} />
+          {/* Alert Preferences */}
+          <div>
+            <h3 className="text-lg font-bold text-dark mb-4">ALERT PREFERENCES</h3>
+            <div className="bg-white border border-primary-light/50 rounded-2xl p-5">
+              <div className="space-y-5">
+                {/* Sales Alerts */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3 flex-1">
+                    <div className="p-2 bg-green-100 text-green-600 rounded-lg mt-0.5">
+                      <ShoppingCart size={18} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-dark">Sales Alerts</p>
+                      <p className="text-sm text-gray-600 mt-0.5">Get notified when a sale is recorded</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-dark">Sales Alerts</p>
-                    <p className="text-sm text-gray-600">Get notified for every sale</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handlePreferenceChange('salesAlerts', !preferences.salesAlerts)}
-                  className={`relative w-14 h-7 rounded-full transition-colors ${
-                    preferences.salesAlerts ? 'bg-primary' : 'bg-gray-300'
-                  }`}
-                >
-                  <div
-                    className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
-                      preferences.salesAlerts ? 'translate-x-7' : 'translate-x-0'
-                    }`}
+                  <ToggleSwitch
+                    enabled={notifications.salesAlerts}
+                    onToggle={() => handlePreferenceChange('salesAlerts', !notifications.salesAlerts)}
                   />
-                </button>
-              </div>
-
-              {/* Low Stock Alerts */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                <div className="flex items-start gap-3 flex-1">
-                  <div className="p-2 bg-orange-100 text-orange-600 rounded-lg">
-                    <AlertTriangle size={20} />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-dark">Low Stock Alerts</p>
-                    <p className="text-sm text-gray-600">Alert when items are running low</p>
-                  </div>
                 </div>
-                <button
-                  onClick={() => handlePreferenceChange('lowStockAlerts', !preferences.lowStockAlerts)}
-                  className={`relative w-14 h-7 rounded-full transition-colors ${
-                    preferences.lowStockAlerts ? 'bg-primary' : 'bg-gray-300'
-                  }`}
-                >
-                  <div
-                    className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
-                      preferences.lowStockAlerts ? 'translate-x-7' : 'translate-x-0'
-                    }`}
-                  />
-                </button>
-              </div>
 
-              {/* Expense Alerts */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                <div className="flex items-start gap-3 flex-1">
-                  <div className="p-2 bg-red-100 text-red-600 rounded-lg">
-                    <Wallet size={20} />
+                {/* Low Stock Alerts */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3 flex-1">
+                    <div className="p-2 bg-orange-100 text-orange-600 rounded-lg mt-0.5">
+                      <AlertTriangle size={18} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-dark">Low Stock Alerts</p>
+                      <p className="text-sm text-gray-600 mt-0.5">Get notified when items run low</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-dark">Expense Alerts</p>
-                    <p className="text-sm text-gray-600">High expense notifications</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handlePreferenceChange('expenseAlerts', !preferences.expenseAlerts)}
-                  className={`relative w-14 h-7 rounded-full transition-colors ${
-                    preferences.expenseAlerts ? 'bg-primary' : 'bg-gray-300'
-                  }`}
-                >
-                  <div
-                    className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
-                      preferences.expenseAlerts ? 'translate-x-7' : 'translate-x-0'
-                    }`}
+                  <ToggleSwitch
+                    enabled={notifications.lowStockAlerts}
+                    onToggle={() => handlePreferenceChange('lowStockAlerts', !notifications.lowStockAlerts)}
                   />
-                </button>
-              </div>
+                </div>
 
-              {/* Daily Reports */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                <div className="flex items-start gap-3 flex-1">
-                  <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
-                    <FileText size={20} />
+                {/* Expense Alerts */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3 flex-1">
+                    <div className="p-2 bg-red-100 text-red-600 rounded-lg mt-0.5">
+                      <Wallet size={18} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-dark">Expense Alerts</p>
+                      <p className="text-sm text-gray-600 mt-0.5">Get notified when expenses are added</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-dark">Daily Reports</p>
-                    <p className="text-sm text-gray-600">Email summary every day</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handlePreferenceChange('dailyReports', !preferences.dailyReports)}
-                  className={`relative w-14 h-7 rounded-full transition-colors ${
-                    preferences.dailyReports ? 'bg-primary' : 'bg-gray-300'
-                  }`}
-                >
-                  <div
-                    className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
-                      preferences.dailyReports ? 'translate-x-7' : 'translate-x-0'
-                    }`}
+                  <ToggleSwitch
+                    enabled={notifications.expenseAlerts}
+                    onToggle={() => handlePreferenceChange('expenseAlerts', !notifications.expenseAlerts)}
                   />
-                </button>
-              </div>
+                </div>
 
-              {/* Weekly Reports */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                <div className="flex items-start gap-3 flex-1">
-                  <div className="p-2 bg-purple-100 text-purple-600 rounded-lg">
-                    <Calendar size={20} />
+                {/* Daily Report */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3 flex-1">
+                    <div className="p-2 bg-blue-100 text-blue-600 rounded-lg mt-0.5">
+                      <FileText size={18} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-dark">Daily Report</p>
+                      <p className="text-sm text-gray-600 mt-0.5">Receive end-of-day summary</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-dark">Weekly Reports</p>
-                    <p className="text-sm text-gray-600">Weekly business summary</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handlePreferenceChange('weeklyReports', !preferences.weeklyReports)}
-                  className={`relative w-14 h-7 rounded-full transition-colors ${
-                    preferences.weeklyReports ? 'bg-primary' : 'bg-gray-300'
-                  }`}
-                >
-                  <div
-                    className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
-                      preferences.weeklyReports ? 'translate-x-7' : 'translate-x-0'
-                    }`}
+                  <ToggleSwitch
+                    enabled={notifications.dailyReport}
+                    onToggle={() => handlePreferenceChange('dailyReport', !notifications.dailyReport)}
                   />
-                </button>
-              </div>
+                </div>
 
-              {/* Monthly Reports */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                <div className="flex items-start gap-3 flex-1">
-                  <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
-                    <Mail size={20} />
+                {/* Weekly Report */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3 flex-1">
+                    <div className="p-2 bg-purple-100 text-purple-600 rounded-lg mt-0.5">
+                      <Calendar size={18} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-dark">Weekly Report</p>
+                      <p className="text-sm text-gray-600 mt-0.5">Receive weekly performance summary</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-dark">Monthly Reports</p>
-                    <p className="text-sm text-gray-600">Monthly comprehensive report</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handlePreferenceChange('monthlyReports', !preferences.monthlyReports)}
-                  className={`relative w-14 h-7 rounded-full transition-colors ${
-                    preferences.monthlyReports ? 'bg-primary' : 'bg-gray-300'
-                  }`}
-                >
-                  <div
-                    className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
-                      preferences.monthlyReports ? 'translate-x-7' : 'translate-x-0'
-                    }`}
+                  <ToggleSwitch
+                    enabled={notifications.weeklyReport}
+                    onToggle={() => handlePreferenceChange('weeklyReport', !notifications.weeklyReport)}
                   />
-                </button>
+                </div>
+
+                {/* Monthly Report */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3 flex-1">
+                    <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg mt-0.5">
+                      <Mail size={18} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-dark">Monthly Report</p>
+                      <p className="text-sm text-gray-600 mt-0.5">Receive monthly analytics report</p>
+                    </div>
+                  </div>
+                  <ToggleSwitch
+                    enabled={notifications.monthlyReport}
+                    onToggle={() => handlePreferenceChange('monthlyReport', !notifications.monthlyReport)}
+                  />
+                </div>
               </div>
             </div>
           </div>
 
           {/* Notification Channels */}
-          <div className="card p-6">
-            <h3 className="text-xl font-bold text-dark mb-6">Notification Channels</h3>
-            <div className="space-y-4">
-              {/* Email Notifications */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
-                    <Mail size={20} />
+          <div>
+            <h3 className="text-lg font-bold text-dark mb-4">NOTIFICATION CHANNELS</h3>
+            <div className="bg-white border border-primary-light/50 rounded-2xl p-5">
+              <div className="space-y-5">
+                {/* Email Notifications */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3 flex-1">
+                    <div className="p-2 bg-blue-100 text-blue-600 rounded-lg mt-0.5">
+                      <Mail size={18} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-dark">Email Notifications</p>
+                      <p className="text-sm text-gray-600 mt-0.5">Receive alerts via email</p>
+                      <p className="text-xs text-gray-500 mt-1">Sending to: {profile.email}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-dark">Email Notifications</p>
-                    <p className="text-sm text-gray-600">Receive notifications via email</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handlePreferenceChange('emailNotifications', !preferences.emailNotifications)}
-                  className={`relative w-14 h-7 rounded-full transition-colors ${
-                    preferences.emailNotifications ? 'bg-primary' : 'bg-gray-300'
-                  }`}
-                >
-                  <div
-                    className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
-                      preferences.emailNotifications ? 'translate-x-7' : 'translate-x-0'
-                    }`}
+                  <ToggleSwitch
+                    enabled={notifications.emailNotifications}
+                    onToggle={() => handlePreferenceChange('emailNotifications', !notifications.emailNotifications)}
                   />
-                </button>
-              </div>
+                </div>
 
-              {/* In-App Notifications */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-100 text-green-600 rounded-lg">
-                    <Bell size={20} />
+                {/* In-App Notifications */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3 flex-1">
+                    <div className="p-2 bg-green-100 text-green-600 rounded-lg mt-0.5">
+                      <Bell size={18} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-dark">In-App Notifications</p>
+                      <p className="text-sm text-gray-600 mt-0.5">Show notifications inside the app</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-dark">In-App Notifications</p>
-                    <p className="text-sm text-gray-600">Show notifications in the app</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handlePreferenceChange('inAppNotifications', !preferences.inAppNotifications)}
-                  className={`relative w-14 h-7 rounded-full transition-colors ${
-                    preferences.inAppNotifications ? 'bg-primary' : 'bg-gray-300'
-                  }`}
-                >
-                  <div
-                    className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
-                      preferences.inAppNotifications ? 'translate-x-7' : 'translate-x-0'
-                    }`}
+                  <ToggleSwitch
+                    enabled={notifications.inAppNotifications}
+                    onToggle={() => handlePreferenceChange('inAppNotifications', !notifications.inAppNotifications)}
                   />
-                </button>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Save Button */}
-          {saving && (
-            <div className="flex items-center justify-center gap-2 p-4 bg-primary-light rounded-xl">
-              <Loader2 size={20} className="animate-spin text-dark" />
-              <span className="text-dark font-medium">Saving preferences...</span>
-            </div>
-          )}
+          {/* Save Preferences Button */}
+          <button
+            onClick={() => toast.success('Preferences saved successfully')}
+            disabled={saving}
+            className="flex items-center gap-2 px-6 py-3 bg-primary text-dark rounded-xl hover:bg-primary-dark transition-all font-medium shadow-md disabled:opacity-50"
+          >
+            {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+            <span>{saving ? 'Saving...' : 'Save Preferences'}</span>
+          </button>
         </div>
       )}
 
@@ -923,235 +965,200 @@ const Settings = () => {
       {activeTab === 'appearance' && (
         <div className="space-y-6 animate-fade-in">
           {/* Theme Settings */}
-          <div className="card p-6">
-            <h3 className="text-xl font-bold text-dark mb-6 flex items-center gap-2">
-              <Palette size={20} className="text-primary-dark" />
-              Theme & Appearance
-            </h3>
-
-            <div className="space-y-6">
-              {/* Dark/Light Mode */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary-light text-dark rounded-lg">
-                    {themeSettings.mode === 'light' ? <Sun size={20} /> : <Moon size={20} />}
-                  </div>
-                  <div>
+          <div>
+            <h3 className="text-lg font-bold text-dark mb-4">THEME SETTINGS</h3>
+            <div className="bg-white border border-primary-light/50 rounded-2xl p-5">
+              <div className="space-y-5">
+                {/* Dark Mode Toggle */}
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
                     <p className="font-semibold text-dark">Dark Mode</p>
-                    <p className="text-sm text-gray-600">Toggle between light and dark theme</p>
+                    <p className="text-sm text-gray-600 mt-0.5">Switch between light and dark theme</p>
                   </div>
-                </div>
-                <button
-                  onClick={() => setThemeSettings({ ...themeSettings, mode: themeSettings.mode === 'light' ? 'dark' : 'light' })}
-                  className={`relative w-14 h-7 rounded-full transition-colors ${
-                    themeSettings.mode === 'dark' ? 'bg-primary' : 'bg-gray-300'
-                  }`}
-                >
-                  <div
-                    className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
-                      themeSettings.mode === 'dark' ? 'translate-x-7' : 'translate-x-0'
-                    }`}
+                  <ToggleSwitch
+                    enabled={theme.darkMode}
+                    onToggle={() => setTheme({ ...theme, darkMode: !theme.darkMode })}
                   />
-                </button>
-              </div>
+                </div>
 
-              {/* Primary Color */}
-              <div className="p-4 bg-gray-50 rounded-xl">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <p className="font-semibold text-dark">Primary Color</p>
-                    <p className="text-sm text-gray-600">Main theme color for buttons and accents</p>
+                {/* Divider */}
+                <div className="border-t border-gray-200"></div>
+
+                {/* Primary Color */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="font-semibold text-dark">Primary Color</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={theme.primaryColor}
+                        onChange={(e) => setTheme({ ...theme, primaryColor: e.target.value })}
+                        className="w-10 h-10 rounded-lg cursor-pointer border-2 border-gray-200"
+                      />
+                      <span className="text-sm font-mono text-gray-600 w-20">{theme.primaryColor}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={themeSettings.primaryColor}
-                      onChange={(e) => setThemeSettings({ ...themeSettings, primaryColor: e.target.value })}
-                      className="w-12 h-12 rounded-lg cursor-pointer border-2 border-gray-200"
-                    />
-                    <span className="text-sm font-mono text-gray-600">{themeSettings.primaryColor}</span>
+                  <p className="text-sm text-gray-600 mb-3">Presets:</p>
+                  <div className="flex gap-2">
+                    {[
+                      { color: '#D6C2A1', name: 'Beige' },
+                      { color: '#B89B72', name: 'Brown' },
+                      { color: '#8B7355', name: 'Taupe' },
+                      { color: '#D4A574', name: 'Gold' },
+                      { color: '#F5EFE6', name: 'Cream' }
+                    ].map(({ color, name }) => (
+                      <button
+                        key={color}
+                        onClick={() => setTheme({ ...theme, primaryColor: color })}
+                        className={`w-10 h-10 rounded-xl border-2 transition-all hover:scale-105 ${
+                          theme.primaryColor === color
+                            ? 'border-[#D6C2A1] scale-105'
+                            : 'border-transparent'
+                        }`}
+                        style={{ backgroundColor: color }}
+                        title={name}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex gap-2 mt-1">
+                    {['Beige', 'Brown', 'Taupe', 'Gold', 'Cream'].map((name) => (
+                      <span key={name} className="w-10 text-xs text-center text-gray-500">{name}</span>
+                    ))}
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  {['#D6C2A1', '#B89B72', '#8B7355', '#A0522D', '#CD853F'].map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => setThemeSettings({ ...themeSettings, primaryColor: color })}
-                      className={`w-10 h-10 rounded-lg border-2 transition-all hover:scale-110 ${
-                        themeSettings.primaryColor === color ? 'border-dark scale-110' : 'border-gray-200'
-                      }`}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
+
+                {/* Divider */}
+                <div className="border-t border-gray-200"></div>
+
+                {/* Accent Color */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="font-semibold text-dark">Accent Color</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={theme.accentColor}
+                        onChange={(e) => setTheme({ ...theme, accentColor: e.target.value })}
+                        className="w-10 h-10 rounded-lg cursor-pointer border-2 border-gray-200"
+                      />
+                      <span className="text-sm font-mono text-gray-600 w-20">{theme.accentColor}</span>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-3">Presets:</p>
+                  <div className="flex gap-2">
+                    {[
+                      { color: '#B89B72', name: 'Brown' },
+                      { color: '#D6C2A1', name: 'Beige' },
+                      { color: '#DEB887', name: 'Peach' },
+                      { color: '#E8C39E', name: 'Sand' },
+                      { color: '#CD853F', name: 'Copper' }
+                    ].map(({ color, name }) => (
+                      <button
+                        key={color}
+                        onClick={() => setTheme({ ...theme, accentColor: color })}
+                        className={`w-10 h-10 rounded-xl border-2 transition-all hover:scale-105 ${
+                          theme.accentColor === color
+                            ? 'border-[#D6C2A1] scale-105'
+                            : 'border-transparent'
+                        }`}
+                        style={{ backgroundColor: color }}
+                        title={name}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex gap-2 mt-1">
+                    {['Brown', 'Beige', 'Peach', 'Sand', 'Copper'].map((name) => (
+                      <span key={name} className="w-10 text-xs text-center text-gray-500">{name}</span>
+                    ))}
+                  </div>
                 </div>
               </div>
+            </div>
+          </div>
 
-              {/* Accent Color */}
-              <div className="p-4 bg-gray-50 rounded-xl">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <p className="font-semibold text-dark">Accent Color</p>
-                    <p className="text-sm text-gray-600">Secondary color for highlights</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={themeSettings.accentColor}
-                      onChange={(e) => setThemeSettings({ ...themeSettings, accentColor: e.target.value })}
-                      className="w-12 h-12 rounded-lg cursor-pointer border-2 border-gray-200"
-                    />
-                    <span className="text-sm font-mono text-gray-600">{themeSettings.accentColor}</span>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  {['#B89B72', '#D6C2A1', '#F5EFE6', '#DEB887', '#F4A460'].map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => setThemeSettings({ ...themeSettings, accentColor: color })}
-                      className={`w-10 h-10 rounded-lg border-2 transition-all hover:scale-110 ${
-                        themeSettings.accentColor === color ? 'border-dark scale-110' : 'border-gray-200'
-                      }`}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Preview */}
-              <div className="p-6 border-2 border-gray-200 rounded-xl">
-                <p className="text-sm font-medium text-gray-600 mb-3">Preview</p>
-                <div className="space-y-3">
+          {/* Live Preview */}
+          <div>
+            <h3 className="text-lg font-bold text-dark mb-4">LIVE PREVIEW</h3>
+            <div className="bg-white border-2 rounded-2xl p-5" style={{ borderColor: theme.accentColor }}>
+              <div className="space-y-4">
+                {/* Buttons Row */}
+                <div className="flex flex-wrap gap-3">
+                  {/* Primary Button */}
                   <button
-                    className="px-6 py-2 text-white rounded-lg transition-all"
-                    style={{ backgroundColor: themeSettings.primaryColor }}
+                    className="px-5 py-2.5 rounded-xl transition-all font-medium"
+                    style={{ backgroundColor: theme.primaryColor, color: '#2E2E2E' }}
                   >
                     Primary Button
                   </button>
-                  <div className="flex gap-2">
-                    <div
-                      className="px-4 py-2 text-white rounded-lg text-sm"
-                      style={{ backgroundColor: themeSettings.primaryColor }}
-                    >
-                      Badge
-                    </div>
-                    <div
-                      className="px-4 py-2 rounded-lg text-sm border-2"
-                      style={{ borderColor: themeSettings.accentColor, color: themeSettings.accentColor }}
-                    >
-                      Outline
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-              {/* PWA Install Section */}
-              <div className="card p-6 border-2 border-gray-200">
-                <h4 className="text-lg font-bold text-dark mb-4 flex items-center gap-2">
-                  <Smartphone size={20} className="text-primary-dark" />
-                  App Installation
-                </h4>
+                  {/* Badge */}
+                  <span
+                    className="px-3 py-1 rounded-full text-sm font-medium"
+                    style={{
+                      backgroundColor: `${theme.primaryColor}33`,
+                      color: theme.primaryColor
+                    }}
+                  >
+                    Badge
+                  </span>
 
-                <p className="text-sm text-gray-600 mb-4">
-                  Install Cecilia Boutique on your device for quick access and offline support.
-                </p>
-
-                <div className="flex items-center gap-2 mb-4">
-                  {isInstalled ? (
-                    <>
-                      <CheckCircle size={20} className="text-green-600" />
-                      <span className="text-sm font-medium text-green-600">Installed</span>
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
-                      <span className="text-sm text-gray-600">Not Installed</span>
-                    </>
-                  )}
+                  {/* Outline Button */}
+                  <button
+                    className="px-5 py-2.5 rounded-xl transition-all font-medium border-2"
+                    style={{
+                      borderColor: theme.primaryColor,
+                      color: theme.primaryColor
+                    }}
+                  >
+                    Outline Button
+                  </button>
                 </div>
 
-                {!isInstalled && (
-                  <>
-                    <button
-                      onClick={async () => {
-                        const result = await handleInstall();
-                        if (result === 'ios') {
-                          setShowIOSInstructions(true);
-                        }
-                      }}
-                      className="w-full px-4 py-3 bg-primary text-dark rounded-xl hover:bg-primary-dark transition-all font-medium flex items-center justify-center gap-2 mb-4 shadow-md"
-                    >
-                      <Smartphone size={18} />
-                      {isIOS ? 'Add to Home Screen' : 'Install App'}
-                    </button>
-                    
-                    {/* iOS Instructions Modal */}
-                    {showIOSInstructions && (
-                      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end sm:items-center justify-center p-4 animate-fade-in">
-                        <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-                          <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-xl font-bold text-dark flex items-center gap-2">
-                              <Smartphone size={20} className="text-primary-dark" />
-                              Install on iPhone
-                            </h3>
-                            <button
-                              onClick={() => setShowIOSInstructions(false)}
-                              className="p-1 text-gray-400 hover:text-gray-600"
-                            >
-                              <X size={20} />
-                            </button>
-                          </div>
-
-                          <ol className="space-y-4 text-sm text-gray-700 mb-6">
-                            <li className="flex items-start gap-3">
-                              <span className="flex-shrink-0 w-7 h-7 bg-primary text-dark rounded-full flex items-center justify-center font-bold text-sm">1</span>
-                              <span>Tap the <strong>Share</strong> button 📤 at the bottom of Safari</span>
-                            </li>
-                            <li className="flex items-start gap-3">
-                              <span className="flex-shrink-0 w-7 h-7 bg-primary text-dark rounded-full flex items-center justify-center font-bold text-sm">2</span>
-                              <span>Scroll down and tap <strong>"Add to Home Screen"</strong></span>
-                            </li>
-                            <li className="flex items-start gap-3">
-                              <span className="flex-shrink-0 w-7 h-7 bg-primary text-dark rounded-full flex items-center justify-center font-bold text-sm">3</span>
-                              <span>Tap <strong>"Add"</strong> in the top right corner</span>
-                            </li>
-                          </ol>
-
-                          <button
-                            onClick={() => setShowIOSInstructions(false)}
-                            className="w-full px-4 py-3 bg-primary text-dark rounded-xl hover:bg-primary-dark transition-all font-medium"
-                          >
-                            Got it!
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                <div className="space-y-2 text-sm text-gray-600">
-                  <p className="flex items-center gap-2">
-                    <span className="text-green-600">✓</span> One-tap access from home screen
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <span className="text-green-600">✓</span> Works offline
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <span className="text-green-600">✓</span> Full-screen experience
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <span className="text-green-600">✓</span> Faster loading
+                {/* Sample Card */}
+                <div
+                  className="p-4 rounded-xl border-2"
+                  style={{
+                    borderColor: theme.accentColor,
+                    backgroundColor: '#FFFFFF'
+                  }}
+                >
+                  <p className="text-sm text-gray-700">
+                    This is a sample card with current theme colors. It updates as you change colors.
                   </p>
                 </div>
               </div>
-
-              <button
-                onClick={() => toast.success('Theme settings saved')}
-                className="flex items-center gap-2 px-6 py-3 bg-primary text-dark rounded-xl hover:bg-primary-dark transition-all font-medium shadow-md"
-              >
-                <Save size={18} />
-                <span>Save Theme</span>
-              </button>
             </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                setTheme({
+                  darkMode: false,
+                  primaryColor: '#D6C2A1',
+                  accentColor: '#B89B72'
+                });
+                toast.success('Theme reset to default');
+              }}
+              className="flex items-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all font-medium"
+            >
+              Reset
+            </button>
+            <button
+              onClick={() => {
+                localStorage.setItem('themeSettings', JSON.stringify(theme));
+                toast.success('Theme saved successfully');
+              }}
+              className="flex items-center gap-2 px-6 py-3 bg-primary text-dark rounded-xl hover:bg-primary-dark transition-all font-medium shadow-md"
+            >
+              <Save size={18} />
+              <span>Save Theme</span>
+            </button>
           </div>
         </div>
       )}

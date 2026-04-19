@@ -24,7 +24,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: ['https://cecilia-boutique.vercel.app', 'http://localhost:3000', 'http://localhost:5173'],
+  origin: ['https://cecilia-boutique.vercel.app', 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']

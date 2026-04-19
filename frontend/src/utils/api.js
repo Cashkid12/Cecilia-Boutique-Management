@@ -83,13 +83,19 @@ export const reportAPI = reportsAPI;
 // Dashboard API
 export const dashboardAPI = {
   getAll: () => api.get('/dashboard'),
+  getAllConsolidated: () => api.get('/dashboard/all'),
   getStats: () => api.get('/dashboard/stats'),
-  getCategorySummary: () => api.get('/dashboard/category-summary')
+  getCategorySummary: () => api.get('/dashboard/category-summary'),
+  getCategoryStats: () => api.get('/dashboard/category-stats'),
+  getSalesChart: (period) => api.get('/dashboard/sales-chart', { params: { period } }),
+  getRecentSales: (limit) => api.get('/dashboard/recent-sales', { params: { limit } }),
+  getLowStock: () => api.get('/dashboard/low-stock')
 };
 
 // Reports API - Category
 export const categoryAPI = {
-  getBestSelling: (period) => api.get('/dashboard/best-category', { params: { period } })
+  getBestSelling: (period) => api.get('/dashboard/best-category', { params: { period } }),
+  getStockDistribution: () => api.get('/dashboard/stock-distribution')
 };
 
 export default api;
