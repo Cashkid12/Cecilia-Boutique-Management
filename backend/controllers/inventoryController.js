@@ -1,6 +1,6 @@
 const Inventory = require('../models/Inventory');
 const { createNotification } = require('./notificationController');
-const Settings = require('../models/Settings');
+const { isValidBuyingPrice, getCategoryMarkup, calculateSellingPrice } = require('../utils/categoryConfig');
 
 // @desc    Get all inventory items
 // @route   GET /api/inventory
@@ -12,13 +12,10 @@ exports.getInventory = async (req, res) => {
 
     if (category) query.category = category;
     if (search) {
-      query.$or = [
-        { itemName: { $regex: search, $options: 'i' } },
-        { color: { $regex: search, $options: 'i' } }
-      ];
+      query.itemName = { $regex: search, $options: 'i' };
     }
     if (lowStock === 'true') {
-      query.$expr = { $lte: ['$quantity', '$lowStockThreshold'] };
+      query.quantity = { $lt: 5 };
     }
 
     const inventory = await Inventory.find(query).sort({ createdAt: -1 });
@@ -48,13 +45,28 @@ exports.getInventoryItem = async (req, res) => {
 // @access  Private (Admin only)
 exports.addInventoryItem = async (req, res) => {
   try {
-    const item = await Inventory.create(req.body);
+    const { category, buyingPrice, sellingPrice, quantity, itemName } = req.body;
     
-    // Check if item is low stock
-    const settings = await Settings.findOne();
-    const threshold = settings?.lowStockThreshold || 3;
+    // Validate buying price matches category preset
+    if (!isValidBuyingPrice(category, buyingPrice)) {
+      return res.status(400).json({ 
+        message: 'Invalid buying price for selected category' 
+      });
+    }
     
-    if (item.quantity <= threshold) {
+    // Calculate selling price if not provided
+    const finalSellingPrice = sellingPrice || calculateSellingPrice(buyingPrice, getCategoryMarkup(category));
+    
+    const item = await Inventory.create({
+      itemName,
+      category,
+      buyingPrice,
+      sellingPrice: finalSellingPrice,
+      quantity
+    });
+    
+    // Check if item is low stock (threshold < 5)
+    if (item.quantity < 5) {
       await createNotification(
         'low_stock',
         `Low stock: ${item.itemName} (${item.quantity} left)`,
@@ -79,6 +91,23 @@ exports.updateInventoryItem = async (req, res) => {
       return res.status(404).json({ message: 'Item not found' });
     }
 
+    // Validate buying price if category or price changed
+    if (req.body.category || req.body.buyingPrice) {
+      const category = req.body.category || item.category;
+      const buyingPrice = req.body.buyingPrice || item.buyingPrice;
+      
+      if (!isValidBuyingPrice(category, buyingPrice)) {
+        return res.status(400).json({ 
+          message: 'Invalid buying price for selected category' 
+        });
+      }
+      
+      // Auto-calculate selling price if not provided
+      if (!req.body.sellingPrice) {
+        req.body.sellingPrice = calculateSellingPrice(buyingPrice, getCategoryMarkup(category));
+      }
+    }
+
     const updatedItem = await Inventory.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -86,10 +115,7 @@ exports.updateInventoryItem = async (req, res) => {
     );
     
     // Check if stock became low after update
-    const settings = await Settings.findOne();
-    const threshold = settings?.lowStockThreshold || 3;
-    
-    if (updatedItem.quantity <= threshold && item.quantity > threshold) {
+    if (updatedItem.quantity < 5 && item.quantity >= 5) {
       await createNotification(
         'low_stock',
         `Low stock alert: ${updatedItem.itemName} (${updatedItem.quantity} left)`,
