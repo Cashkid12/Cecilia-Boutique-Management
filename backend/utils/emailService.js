@@ -1,5 +1,6 @@
 const nodemailer = require('nodemailer');
 const Settings = require('../models/Settings');
+const Notification = require('../models/Notification');
 
 // Create transporter
 const createTransporter = async () => {
@@ -16,6 +17,219 @@ const createTransporter = async () => {
       pass: settings.emailPassword
     }
   });
+};
+
+// Send Sale Notification Email
+exports.sendSaleEmail = async (userId, saleData) => {
+  try {
+    const settings = await Settings.findOne();
+    
+    if (!settings || !settings.emailEnabled) {
+      return false;
+    }
+
+    // Rate limiting: Max 1 sale email per 10 minutes
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    const recentSaleEmail = await Notification.findOne({
+      userId,
+      type: 'sale',
+      emailSent: true,
+      createdAt: { $gte: tenMinutesAgo }
+    });
+
+    if (recentSaleEmail) {
+      console.log('Sale email already sent recently, skipping');
+      return false;
+    }
+
+    const transporter = await createTransporter();
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #D6C2A1; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }
+          .header h1 { margin: 0; color: #2E2E2E; }
+          .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 10px 10px; }
+          .amount { font-size: 28px; font-weight: bold; color: #27ae60; text-align: center; margin: 20px 0; }
+          .details { background: white; padding: 15px; border-radius: 8px; margin: 15px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #999; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🛒 New Sale Recorded</h1>
+            <p>Cecilia Boutique</p>
+          </div>
+          <div class="content">
+            <div class="amount">KSh ${saleData.amount.toLocaleString()}</div>
+            <div class="details">
+              <p><strong>Worker:</strong> ${saleData.workerName}</p>
+              <p><strong>Items Sold:</strong> ${saleData.itemCount}</p>
+              <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+            </div>
+            <p>View your dashboard for more details.</p>
+            <div class="footer">
+              <p>This is an automated alert from Cecilia Boutique Management System</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await transporter.sendMail({
+      from: settings.adminEmail,
+      to: settings.adminEmail,
+      subject: '🛒 New Sale - Cecilia Boutique',
+      html: htmlContent
+    });
+
+    console.log('Sale email sent successfully');
+    return true;
+  } catch (error) {
+    console.error('Error sending sale email:', error.message);
+    return false;
+  }
+};
+
+// Send Expense Notification Email
+exports.sendExpenseEmail = async (userId, expenseData) => {
+  try {
+    const settings = await Settings.findOne();
+    
+    if (!settings || !settings.emailEnabled) {
+      return false;
+    }
+
+    const transporter = await createTransporter();
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #D6C2A1; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }
+          .header h1 { margin: 0; color: #2E2E2E; }
+          .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 10px 10px; }
+          .amount { font-size: 28px; font-weight: bold; color: #e74c3c; text-align: center; margin: 20px 0; }
+          .details { background: white; padding: 15px; border-radius: 8px; margin: 15px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #999; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>💸 New Expense Added</h1>
+            <p>Cecilia Boutique</p>
+          </div>
+          <div class="content">
+            <div class="amount">-KSh ${expenseData.amount.toLocaleString()}</div>
+            <div class="details">
+              <p><strong>Category:</strong> ${expenseData.category}</p>
+              <p><strong>Description:</strong> ${expenseData.description}</p>
+              <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
+            </div>
+            <div class="footer">
+              <p>This is an automated alert from Cecilia Boutique Management System</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await transporter.sendMail({
+      from: settings.adminEmail,
+      to: settings.adminEmail,
+      subject: '💸 New Expense - Cecilia Boutique',
+      html: htmlContent
+    });
+
+    console.log('Expense email sent successfully');
+    return true;
+  } catch (error) {
+    console.error('Error sending expense email:', error.message);
+    return false;
+  }
+};
+
+// Send Daily Report Email
+exports.sendDailyReportEmail = async (userId, reportData) => {
+  try {
+    const settings = await Settings.findOne();
+    
+    if (!settings || !settings.emailEnabled) {
+      return false;
+    }
+
+    const transporter = await createTransporter();
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #D6C2A1 0%, #B89B72 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .header h1 { margin: 0; color: #2E2E2E; }
+          .content { background: #f9f9f9; padding: 30px; }
+          .stat { display: inline-block; width: 45%; margin: 10px 2%; padding: 15px; background: white; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+          .stat-value { font-size: 24px; font-weight: bold; color: #2E2E2E; }
+          .stat-label { font-size: 12px; color: #666; margin-top: 5px; }
+          .footer { text-align: center; margin-top: 20px; color: #999; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>📊 Daily Sales Report</h1>
+            <p>Cecilia Boutique - ${reportData.date}</p>
+          </div>
+          <div class="content">
+            <div class="stat">
+              <div class="stat-value">KSh ${reportData.totalSales.toLocaleString()}</div>
+              <div class="stat-label">Total Sales</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value">${reportData.itemsSold}</div>
+              <div class="stat-label">Items Sold</div>
+            </div>
+            ${reportData.topItem ? `
+            <div class="stat">
+              <div class="stat-value">🏆</div>
+              <div class="stat-label">Top: ${reportData.topItem}</div>
+            </div>
+            ` : ''}
+            <div class="footer">
+              <p>This is an automated daily report from Cecilia Boutique Management System</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await transporter.sendMail({
+      from: settings.adminEmail,
+      to: settings.adminEmail,
+      subject: `📊 Daily Report - Cecilia Boutique - ${reportData.date}`,
+      html: htmlContent
+    });
+
+    console.log('Daily report email sent successfully');
+    return true;
+  } catch (error) {
+    console.error('Error sending daily report email:', error.message);
+    return false;
+  }
 };
 
 // Send Low Stock Alert Email

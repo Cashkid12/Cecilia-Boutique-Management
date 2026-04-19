@@ -1,18 +1,38 @@
 const Notification = require('../models/Notification');
+const User = require('../models/User');
+const emailService = require('../utils/emailService');
 
 /**
  * Centralized Notification Service
  * Handles all notification operations across the system
  */
 
-// Create notification
-exports.createNotification = async (type, message, relatedItem = null, relatedModel = null) => {
+// Create notification for all admins or specific user
+exports.createNotification = async ({ userId, type, title, message, data }) => {
   try {
+    // If no userId provided, send to all admins
+    if (!userId) {
+      const admins = await User.find({ role: 'admin' });
+      
+      const notifications = admins.map(admin => ({
+        userId: admin._id,
+        type,
+        title,
+        message,
+        data: data || {}
+      }));
+      
+      await Notification.insertMany(notifications);
+      return notifications;
+    }
+    
+    // Create single notification
     const notification = await Notification.create({
+      userId,
       type,
+      title,
       message,
-      relatedItem,
-      relatedModel
+      data: data || {}
     });
 
     return notification;
@@ -22,71 +42,144 @@ exports.createNotification = async (type, message, relatedItem = null, relatedMo
   }
 };
 
-// Create sale notification
+// Create sale notification with email
 exports.createSaleNotification = async (sale) => {
   try {
-    const message = `New sale: ${sale.itemName} (${sale.quantity} units) - KSh ${sale.totalAmount}`;
+    const title = 'New Sale Recorded!';
+    const message = `Sale of KSh ${sale.totalAmount} recorded by ${sale.workerName}`;
+    const data = {
+      saleId: sale._id,
+      amount: sale.totalAmount,
+      workerName: sale.workerName,
+      items: sale.itemName
+    };
     
-    return await this.createNotification(
-      'new_sale',
+    // Create in-app notification
+    const notification = await this.createNotification({
+      type: 'sale',
+      title,
       message,
-      sale._id,
-      'Sale'
-    );
+      data
+    });
+    
+    // Send email notification (rate limited)
+    const admins = await User.find({ role: 'admin' });
+    if (admins.length > 0) {
+      await emailService.sendSaleEmail(admins[0]._id, {
+        amount: sale.totalAmount,
+        workerName: sale.workerName,
+        itemCount: sale.quantity
+      });
+    }
+    
+    return notification;
   } catch (error) {
     console.error('Error creating sale notification:', error.message);
     return null;
   }
 };
 
-// Create expense notification
+// Create low stock notification with email
+exports.createLowStockNotification = async (item) => {
+  try {
+    const title = 'Low Stock Alert!';
+    const message = `${item.category} - KSh ${item.buyingPrice} has only ${item.quantity} left`;
+    const data = {
+      itemId: item._id,
+      category: item.category,
+      buyingPrice: item.buyingPrice,
+      quantity: item.quantity
+    };
+    
+    // Create in-app notification
+    const notification = await this.createNotification({
+      type: 'low_stock',
+      title,
+      message,
+      data
+    });
+    
+    // Send email notification (rate limited)
+    const admins = await User.find({ role: 'admin' });
+    if (admins.length > 0) {
+      await emailService.sendLowStockEmail([item]);
+    }
+    
+    return notification;
+  } catch (error) {
+    console.error('Error creating low stock notification:', error.message);
+    return null;
+  }
+};
+
+// Create expense notification with email
 exports.createExpenseNotification = async (expense) => {
   try {
-    const message = `Expense added: ${expense.category} - KSh ${expense.amount}`;
+    const title = 'New Expense Added';
+    const message = `${expense.category} expense of KSh ${expense.amount} added`;
+    const data = {
+      expenseId: expense._id,
+      category: expense.category,
+      amount: expense.amount
+    };
     
-    return await this.createNotification(
-      'expense_added',
+    // Create in-app notification
+    const notification = await this.createNotification({
+      type: 'expense',
+      title,
       message,
-      expense._id,
-      'Expense'
-    );
+      data
+    });
+    
+    // Send email notification
+    const admins = await User.find({ role: 'admin' });
+    if (admins.length > 0) {
+      await emailService.sendExpenseEmail(admins[0]._id, {
+        category: expense.category,
+        amount: expense.amount,
+        description: expense.description
+      });
+    }
+    
+    return notification;
   } catch (error) {
     console.error('Error creating expense notification:', error.message);
     return null;
   }
 };
 
-// Create worker notification
-exports.createWorkerNotification = async (worker) => {
+// Create report notification
+exports.createReportNotification = async ({ userId, type, title, message, data }) => {
   try {
-    const message = `New worker added: ${worker.name}`;
-    
-    return await this.createNotification(
-      'worker_created',
+    const notification = await this.createNotification({
+      userId,
+      type: 'report',
+      title,
       message,
-      worker._id,
-      'User'
-    );
+      data
+    });
+    
+    return notification;
   } catch (error) {
-    console.error('Error creating worker notification:', error.message);
+    console.error('Error creating report notification:', error.message);
     return null;
   }
 };
 
-// Get unread count
-exports.getUnreadCount = async () => {
+// Get unread count for user
+exports.getUnreadCount = async (userId) => {
   try {
-    return await Notification.countDocuments({ isRead: false });
+    return await Notification.countDocuments({ userId, read: false });
   } catch (error) {
     console.error('Error getting unread count:', error.message);
     return 0;
   }
 };
 
-// Get recent notifications
-exports.getRecentNotifications = async (limit = 10) => {
+// Get recent notifications for user
+exports.getRecentNotifications = async (userId, limit = 10) => {
   try {
-    return await Notification.find()
+    return await Notification.find({ userId })
       .sort({ createdAt: -1 })
       .limit(limit);
   } catch (error) {
@@ -95,12 +188,12 @@ exports.getRecentNotifications = async (limit = 10) => {
   }
 };
 
-// Mark all as read
-exports.markAllAsRead = async () => {
+// Mark all as read for user
+exports.markAllAsRead = async (userId) => {
   try {
     await Notification.updateMany(
-      { isRead: false },
-      { isRead: true }
+      { userId, read: false },
+      { read: true }
     );
     return true;
   } catch (error) {
@@ -117,7 +210,7 @@ exports.cleanupOldNotifications = async (daysOld = 30) => {
 
     const result = await Notification.deleteMany({
       createdAt: { $lt: cutoffDate },
-      isRead: true
+      read: true
     });
 
     console.log(`Cleaned up ${result.deletedCount} old notifications`);
