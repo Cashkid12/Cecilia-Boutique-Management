@@ -1,18 +1,11 @@
 import { useState } from 'react';
-import { Menu, Bell, Search, User, X } from 'lucide-react';
+import { Menu, Search, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import NotificationDropdown from './NotificationDropdown';
 
 const Navbar = ({ toggleSidebar, title }) => {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [showNotifications, setShowNotifications] = useState(false);
-
-  // Sample notifications (can be replaced with real data from API)
-  const notifications = [
-    { id: 1, message: 'Low stock alert: 3 items below threshold', time: '5 min ago', type: 'warning' },
-    { id: 2, message: 'New sale recorded: KSh 2,500', time: '15 min ago', type: 'success' },
-    { id: 3, message: 'Expense added: KSh 800', time: '1 hour ago', type: 'info' }
-  ];
 
   return (
     <header className="sticky top-0 z-30 bg-white border-b border-primary-light px-4 lg:px-6 py-4">
@@ -47,40 +40,7 @@ const Navbar = ({ toggleSidebar, title }) => {
         {/* Right Section */}
         <div className="flex items-center gap-3">
           {/* Notifications */}
-          <div className="relative">
-            <button 
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 hover:bg-primary-light rounded-xl transition-colors"
-            >
-              <Bell size={22} className="text-dark" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
-            
-            {/* Notification Dropdown */}
-            {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-primary-light z-50">
-                <div className="p-4 border-b border-primary-light flex items-center justify-between">
-                  <h3 className="font-semibold text-dark">Notifications</h3>
-                  <button onClick={() => setShowNotifications(false)} className="text-gray-500 hover:text-dark">
-                    <X size={18} />
-                  </button>
-                </div>
-                <div className="max-h-96 overflow-y-auto">
-                  {notifications.map((notif) => (
-                    <div key={notif.id} className="p-4 border-b border-gray-100 hover:bg-primary-light transition-colors">
-                      <p className="text-sm text-dark">{notif.message}</p>
-                      <p className="text-xs text-gray-500 mt-1">{notif.time}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="p-3 text-center border-t border-primary-light">
-                  <button className="text-sm text-primary-dark font-medium hover:underline">
-                    View All Notifications
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          <NotificationDropdown />
           
           <div className="flex items-center gap-2 pl-3 border-l border-primary-light">
             <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-dark font-semibold">
