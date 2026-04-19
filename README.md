@@ -1,353 +1,419 @@
-# Cecilia Boutique Management
+# Cecilia Boutique Management System
 
-A professional clothing shop management web application built with React.js, Tailwind CSS, Node.js, Express, and MongoDB.
+A comprehensive boutique management application built with the MERN stack (MongoDB, Express, React, Node.js) featuring inventory management, sales tracking, expense monitoring, worker management, and real-time analytics.
 
-## ✨ Features
+## 🎯 Features
 
-### Core Features
-- **Role-Based Authentication**: Admin and Employee roles with different access levels
-- **Dashboard Analytics**: Real-time sales, inventory, and performance metrics
-- **Inventory Management**: Category-based stock tracking with premium UI
-- **Sales Tracking**: Record sales, track profits, and generate receipts
-- **Expense Management**: Monitor business costs and operational spending
-- **Worker Management**: Employee performance tracking and account management
-- **Reports & Analytics**: Comprehensive profit/loss reports with charts
+### Dashboard
+- **Admin Dashboard**: Complete overview with sales analytics, stock distribution, best sellers, recent sales, low stock alerts, top workers, and expenses
+- **Employee Dashboard**: Simplified view showing today's sales, recent transactions, and personal performance metrics
+- **Category Stock Overview**: 13-category grid showing inventory levels with low stock badges
+- **Real-time Data**: Live updates and analytics
+
+### Inventory Management
+- Full CRUD operations for products
+- Category-based organization (13 categories)
+- Low stock alerts and tracking
+- Bulk operations
+- Search and filtering
+
+### Sales Management
+- Record sales with profit calculation
+- Multiple payment methods (Cash, M-Pesa, Card)
+- Sales history and filtering
+- Daily/Weekly/Monthly reports
+- Profit margin tracking
+
+### Expense Tracking
+- Categorize expenses
+- Track daily spending
+- Expense reports and analytics
+- Integration with profit calculations
+
+### Worker Management
+- Worker profiles and performance tracking
+- Sales attribution
+- Role-based access control
+- Activity monitoring
+
 ### Settings & Profile
-- **Active Sessions Management**: View and control all login sessions
-- **Notification Preferences**: Customize alerts for sales, stock, expenses
-- **Profile Management**: Update account details and password
-- **Email & In-App Notifications**: Toggle notification channels
+- **General Tab**: Profile information, shop details, password change
+- **Sessions Tab**: Active session management, logout devices
+- **Notifications Tab**: 8 customizable notification preferences with toggle switches
+- **Appearance Tab**: Theme customization with color pickers and dark mode
 
-### 🤖 Automated Notification & Email System
-- **Real-Time Notifications**: In-app notifications for all system events
-  - Low stock alerts
-  - New sales recorded
-  - Expenses added
-  - Workers created
-  
-- **Email Automation** (Powered by Nodemailer):
-  - **Low Stock Alerts**: Automatic email when items fall below threshold
-  - **Weekly Reports**: Every Monday at 8 AM with sales, profit, and expenses summary
-  - **Monthly Reports**: 1st of each month with growth analysis and worker performance
-  
-- **Smart Detection System**:
-  - Automatically detects low stock (configurable threshold)
-  - Prevents email spam (sends once per hour max)
-  - Batches all low stock items in single email
-  - Beautiful HTML email templates
+### PWA Support
+- Installable on all devices (iOS, Android, Desktop)
+- Offline support with service worker
+- Push notifications ready
+- App shortcuts for quick actions
 
-### 🔄 Real-Time System Synchronization
-- **Automatic Updates**: One action updates everything across the system
-  - Sale recorded → Stock deducted → Dashboard updated → Notifications triggered
-  - Stock updated → Low stock check → Email sent (if needed) → Metrics recalculated
-  - Expense added → Profit recalculated → Notification created
-  
-- **Stock Management Service**:
-  - Centralized stock operations
-  - Prevents overselling
-  - Validates stock availability
-  - Auto-calculates stock metrics
-  - Tracks stock status (In Stock, Low Stock, Out of Stock)
-
-### 🎨 Premium Inventory Management
-- **Category-Based Navigation**: Browse stock by clothing categories
-  - Trousers, T-Shirts, Shirts, Dresses, Jackets, Shoes, Accessories
-  - Subcategory filtering (e.g., Jeans, Khaki, Official, Casual)
-  
-- **Modern Card-Based UI**:
-  - Responsive grid layout
-  - Hover animations and smooth transitions
-  - Real-time stock status badges
-  - Quick actions (Edit, Restock, Delete, View Details)
-  
-- **Advanced Search & Filter**:
-  - Live search within categories
-  - Size, color, and status filters
-  - Export to CSV functionality
-
-## Tech Stack
+## 🛠️ Tech Stack
 
 ### Frontend
-- React.js 18
-- Tailwind CSS
-- Recharts (Data Visualization)
-- Lucide React Icons
-- React Hot Toast (Notifications)
-- Axios (HTTP Client)
-- React Router DOM
+- **React 18** - UI library
+- **Vite** - Build tool and dev server
+- **Tailwind CSS** - Styling framework
+- **React Router** - Navigation
+- **Recharts** - Charts and graphs
+- **Lucide React** - Icon library
+- **React Hot Toast** - Notifications
+- **Axios** - HTTP client
 
 ### Backend
-- Node.js
-- Express.js
-- MongoDB with Mongoose
-- JWT Authentication
-- Bcrypt (Password Hashing)
-- **Nodemailer** (Email Service)
-- **node-cron** (Scheduled Tasks)
+- **Node.js** - Runtime environment
+- **Express.js** - Web framework
+- **MongoDB** - Database
+- **Mongoose** - ODM
+- **JWT** - Authentication
+- **bcryptjs** - Password hashing
+- **dotenv** - Environment variables
 
-### Services Architecture
-- **stockService.js**: Centralized stock management
-- **notificationService.js**: Notification handling
-- **emailService.js**: Email generation and sending
-- **cronJobs.js**: Automated scheduled reports
+### PWA
+- **Service Worker** - Caching and offline support
+- **Web App Manifest** - Installability
+- **Background Sync** - Offline data synchronization
 
-## Getting Started
+## 📁 Project Structure
+
+```
+MUM/
+├── backend/
+│   ├── config/
+│   │   └── db.js                    # Database connection
+│   ├── controllers/
+│   │   ├── authController.js        # Authentication logic
+│   │   ├── categoryController.js    # Category statistics
+│   │   ├── dashboardController.js   # Dashboard data
+│   │   ├── expenseController.js     # Expense management
+│   │   ├── inventoryController.js   # Inventory CRUD
+│   │   ├── notificationController.js # Notifications
+│   │   ├── reportController.js      # Reports generation
+│   │   ├── salesController.js       # Sales operations
+│   │   └── workerController.js      # Worker management
+│   ├── middleware/
+│   │   └── auth.js                  # JWT authentication middleware
+│   ├── models/
+│   │   ├── Expense.js               # Expense schema
+│   │   ├── Inventory.js             # Product schema
+│   │   ├── Notification.js          # Notification schema
+│   │   ├── Sale.js                  # Sale schema
+│   │   ├── Settings.js              # Settings schema
+│   │   └── User.js                  # User schema
+│   ├── routes/
+│   │   ├── authRoutes.js            # Auth endpoints
+│   │   ├── categoryRoutes.js        # Category endpoints
+│   │   ├── dashboardRoutes.js       # Dashboard endpoints
+│   │   ├── expenseRoutes.js         # Expense endpoints
+│   │   ├── inventoryRoutes.js       # Inventory endpoints
+│   │   ├── notificationRoutes.js    # Notification endpoints
+│   │   ├── reportRoutes.js          # Report endpoints
+│   │   ├── salesRoutes.js           # Sales endpoints
+│   │   └── workerRoutes.js          # Worker endpoints
+│   ├── services/
+│   │   ├── notificationService.js   # Notification logic
+│   │   └── stockService.js          # Stock management
+│   ├── utils/
+│   │   ├── categoryConfig.js        # Category definitions
+│   │   ├── cronJobs.js              # Scheduled tasks
+│   │   ├── emailService.js          # Email notifications
+│   │   └── token.js                 # JWT token utilities
+│   ├── .env                         # Environment variables
+│   ├── package.json                 # Backend dependencies
+│   ├── seeder.js                    # Database seeder
+│   └── server.js                    # Express server
+│
+├── frontend/
+│   ├── public/
+│   │   ├── icons/                   # PWA icons (9 sizes)
+│   │   ├── manifest.json            # PWA manifest
+│   │   ├── service-worker.js        # Service worker
+│   │   ├── offline.html             # Offline fallback page
+│   │   └── logo.png                 # Favicon
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── DashboardLayout.jsx  # Layout wrapper
+│   │   │   ├── Navbar.jsx           # Top navigation
+│   │   │   ├── PWAInstallPrompt.jsx # PWA install prompt
+│   │   │   └── Sidebar.jsx          # Side navigation
+│   │   ├── context/
+│   │   │   ├── AuthContext.jsx      # Authentication context
+│   │   │   └── ThemeContext.jsx     # Theme management
+│   │   ├── hooks/
+│   │   │   ├── usePWAInstall.js     # PWA installation hook
+│   │   │   └── useRealTimeData.js   # Real-time data hook
+│   │   ├── pages/
+│   │   │   ├── AdminDashboard.jsx   # Admin dashboard
+│   │   │   ├── EmployeeDashboard.jsx # Employee dashboard
+│   │   │   ├── Expenses.jsx         # Expense management
+│   │   │   ├── Inventory.jsx        # Inventory management
+│   │   │   ├── Login.jsx            # Login page
+│   │   │   ├── Profile.jsx          # User profile
+│   │   │   ├── Register.jsx         # Registration page
+│   │   │   ├── Reports.jsx          # Reports page
+│   │   │   ├── Sales.jsx            # Sales management
+│   │   │   ├── Settings.jsx         # Settings page (4 tabs)
+│   │   │   └── Workers.jsx          # Worker management
+│   │   ├── utils/
+│   │   │   └── api.js               # API utilities
+│   │   ├── App.jsx                  # Main app component
+│   │   ├── main.jsx                 # Entry point
+│   │   └── index.css                # Global styles
+│   ├── .env                         # Environment variables
+│   ├── vite.config.js               # Vite configuration
+│   ├── tailwind.config.js           # Tailwind configuration
+│   └── package.json                 # Frontend dependencies
+│
+└── Documentation/
+    ├── README.md                    # This file
+    ├── DEPLOYMENT.md                # Deployment guide
+    └── API.md                       # API documentation
+```
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (v16 or higher)
-- MongoDB Atlas account or local MongoDB
-- Gmail account (for email notifications - optional)
+- Node.js (v14 or higher)
+- MongoDB (local or Atlas)
+- npm or yarn
 
 ### Installation
 
-1. Clone the repository
+1. **Clone the repository**
 ```bash
 git clone https://github.com/Cashkid12/Cecilia-Boutique-Management.git
 cd Cecilia-Boutique-Management
 ```
 
-2. Install backend dependencies
+2. **Install Backend Dependencies**
 ```bash
 cd backend
 npm install
 ```
 
-3. Install frontend dependencies
+3. **Install Frontend Dependencies**
 ```bash
 cd ../frontend
 npm install
 ```
 
-4. Set up environment variables
-- Copy `.env.example` to `.env` in the backend folder
-- Add your MongoDB connection string and JWT secret
-- (Optional) Add Gmail credentials for email notifications
+4. **Configure Environment Variables**
 
+Create `.env` file in `backend/`:
 ```env
+NODE_ENV=development
 PORT=5000
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret
-JWT_EXPIRE=7d
-
-# Email Configuration (Optional)
+MONGO_URI=mongodb://localhost:27017/cecilia-boutique
+JWT_SECRET=your_jwt_secret_key_here
+JWT_EXPIRE=30d
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
 EMAIL_USER=your_email@gmail.com
-EMAIL_PASSWORD=your_app_password
+EMAIL_PASS=your_email_password
 ```
 
-5. Start the backend server
+Create `.env` file in `frontend/`:
+```env
+VITE_API_URL=http://localhost:5000/api
+```
+
+5. **Seed Database (Optional)**
 ```bash
 cd backend
-npm start
+node seeder.js
 ```
 
-6. Start the frontend development server
+6. **Start Development Servers**
+
+Backend (Terminal 1):
+```bash
+cd backend
+npm run dev
+```
+
+Frontend (Terminal 2):
 ```bash
 cd frontend
 npm run dev
 ```
 
-7. Access the application
-- Frontend: `http://localhost:5173`
-- Backend API: `http://localhost:5000`
+The application will be available at:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:5000
 
-## Usage
+## 📱 PWA Installation
 
-- Access the app at `http://localhost:5173`
-- First-time setup: Create an admin account
-- Admin can create employee accounts
-- Employees can only access their own dashboard and sales
+### Desktop
+1. Visit the application URL
+2. Click the install icon in the address bar
+3. Follow the prompts to install
 
-### Setting Up Email Notifications (Optional)
+### Android
+1. Open the app in Chrome
+2. Tap "Add to Home Screen"
+3. Confirm installation
 
-1. Enable 2-Factor Authentication on your Gmail account
-2. Generate an App Password:
-   - Go to Google Account Settings
-   - Security → 2-Step Verification → App Passwords
-   - Generate password for "Mail"
-3. Add to your `.env` file:
-   ```env
-   ADMIN_EMAIL=your_email@gmail.com
-   EMAIL_PASSWORD=your_generated_app_password
-   ```
-4. Configure notification settings in the app Settings page
+### iOS
+1. Open the app in Safari
+2. Tap the Share button
+3. Select "Add to Home Screen"
+4. Tap "Add"
 
-### Automated Features
+## 🎨 Design System
 
-Once configured, the system automatically:
-- ✅ Sends low stock alerts when items fall below threshold
-- ✅ Emails weekly business reports every Monday at 8 AM
-- ✅ Emails monthly reports on the 1st of each month
-- ✅ Creates in-app notifications for all actions
-- ✅ Updates all dashboards in real-time
-- ✅ Prevents overselling and stock errors
+### Colors
+- **Primary**: `#D6C2A1` (Beige)
+- **Primary Dark**: `#B89B72` (Brown)
+- **Primary Light**: `#F5EFE6` (Cream)
+- **Dark**: `#2E2E2E`
+- **White**: `#FFFFFF`
 
-## Project Structure
+### Typography
+- **Font Family**: Inter
+- **Weights**: 300, 400, 500, 600, 700
 
-```
-Cecilia-Boutique-Management/
-├── backend/
-│   ├── controllers/          # Request handlers
-│   │   ├── authController.js
-│   │   ├── dashboardController.js
-│   │   ├── expenseController.js
-│   │   ├── inventoryController.js
-│   │   ├── notificationController.js  # NEW
-│   │   ├── reportController.js
-│   │   ├── salesController.js
-│   │   └── workerController.js
-│   ├── models/               # Database schemas
-│   │   ├── Expense.js
-│   │   ├── Inventory.js
-│   │   ├── Notification.js   # NEW
-│   │   ├── Sale.js
-│   │   ├── Settings.js       # NEW
-│   │   └── User.js
-│   ├── routes/               # API routes
-│   │   ├── authRoutes.js
-│   │   ├── dashboardRoutes.js
-│   │   ├── expenseRoutes.js
-│   │   ├── inventoryRoutes.js
-│   │   ├── notificationRoutes.js  # NEW
-│   │   ├── reportRoutes.js
-│   │   ├── salesRoutes.js
-│   │   └── workerRoutes.js
-│   ├── services/             # NEW - Business logic
-│   │   ├── stockService.js          # Stock management
-│   │   └── notificationService.js   # Notifications
-│   ├── utils/                # Utilities
-│   │   ├── auth.js
-│   │   ├── cronJobs.js              # NEW - Scheduled tasks
-│   │   └── emailService.js          # NEW - Email sending
-│   ├── middleware/
-│   │   └── auth.js
-│   ├── config/
-│   │   └── db.js
-│   ├── .env                  # Environment variables
-│   ├── package.json
-│   ├── server.js
-│   └── seeder.js
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── DashboardLayout.jsx
-│   │   │   ├── Navbar.jsx
-│   │   │   └── Sidebar.jsx
-│   │   ├── context/
-│   │   │   ├── AuthContext.jsx
-│   │   │   └── ThemeContext.jsx
-│   │   ├── hooks/
-│   │   │   └── useRealTimeData.js
-│   │   ├── pages/
-│   │   │   ├── AdminDashboard.jsx
-│   │   │   ├── EmployeeDashboard.jsx
-│   │   │   ├── Expenses.jsx
-│   │   │   ├── Inventory.jsx      # REDESIGNED
-│   │   │   ├── Login.jsx
-│   │   │   ├── Profile.jsx
-│   │   │   ├── Register.jsx
-│   │   │   ├── Reports.jsx
-│   │   │   ├── Sales.jsx
-│   │   │   ├── Settings.jsx
-│   │   │   └── Workers.jsx
-│   │   ├── utils/
-│   │   │   └── api.js
-│   │   ├── App.jsx
-│   │   ├── main.jsx
-│   │   └── index.css
-│   ├── package.json
-│   └── vite.config.js
-├── README.md
-├── DEPLOYMENT_GUIDE.md
-└── .gitignore
-```
+### Categories (13 Total)
+1. Men's Trousers
+2. Ladies Trousers
+3. Boys Trouser
+4. Girls Trouser
+5. Shorts
+6. T-Shirts
+7. T-Shirt Boys
+8. T-Shirt Girls
+9. Socks
+10. Vests
+11. Jackets Men
+12. Jackets Ladies
+13. Jackets Kids
 
-## License
-
-MIT License
-
-## API Endpoints
-
-### Notifications
-- `GET /api/notifications` - Get all notifications
-- `GET /api/notifications/stats` - Get notification statistics
-- `PUT /api/notifications/:id/read` - Mark as read
-- `PUT /api/notifications/read-all` - Mark all as read
-- `DELETE /api/notifications/:id` - Delete notification
-
-### Stock Management
-- `GET /api/inventory` - Get all inventory
-- `POST /api/inventory` - Add new item
-- `PUT /api/inventory/:id` - Update item
-- `DELETE /api/inventory/:id` - Delete item
-- *Automatic triggers*: Low stock detection, notifications, emails
-
-### Sales
-- `POST /api/sales` - Record sale (auto-updates stock)
-- `GET /api/sales` - Get all sales
-- *Automatic triggers*: Stock deduction, notifications, dashboard updates
-
-### Expenses
-- `POST /api/expenses` - Add expense (triggers notification)
-- `GET /api/expenses` - Get all expenses
-
-### Workers
-- `POST /api/workers` - Add worker (triggers notification)
-- `GET /api/workers` - Get all workers
-
-### Category Analytics
-- `GET /api/dashboard/category-summary` - Stock summary by category
-- `GET /api/dashboard/best-category` - Best selling category analytics
-
-## Security Features
+## 🔐 Authentication
 
 - JWT-based authentication
 - Password hashing with bcrypt
 - Role-based access control (Admin/Employee)
-- Protected API routes
-- CORS configuration
-- Environment variable protection
+- Session management
+- Protected routes
 
-## Performance Optimizations
+## 📊 API Endpoints
 
-- Aggregation pipelines for complex queries
-- Indexed database fields
-- Batched email notifications (prevents spam)
-- Efficient stock validation
-- Optimized cron job scheduling
+### Authentication
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login user
+- `GET /api/auth/me` - Get current user
 
-## Deployment
+### Dashboard
+- `GET /api/dashboard/all` - Get all dashboard data
+- `GET /api/dashboard/category-stats` - Get category statistics
 
-See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed deployment instructions:
-- Backend: Render (Free tier)
-- Frontend: Vercel (Free tier)
-- Database: MongoDB Atlas (Free tier)
+### Inventory
+- `GET /api/inventory` - Get all products
+- `POST /api/inventory` - Create product
+- `PUT /api/inventory/:id` - Update product
+- `DELETE /api/inventory/:id` - Delete product
 
-## Support & Troubleshooting
+### Sales
+- `GET /api/sales` - Get all sales
+- `POST /api/sales` - Record sale
+- `GET /api/sales/:id` - Get sale details
+- `DELETE /api/sales/:id` - Delete sale
 
-### Common Issues
+### Expenses
+- `GET /api/expenses` - Get all expenses
+- `POST /api/expenses` - Create expense
+- `PUT /api/expenses/:id` - Update expense
+- `DELETE /api/expenses/:id` - Delete expense
 
-1. **Backend won't start**
-   - Run `npm install` in backend folder
-   - Check `.env` file configuration
-   - Verify MongoDB connection string
+### Workers
+- `GET /api/workers` - Get all workers
+- `POST /api/workers` - Create worker
+- `PUT /api/workers/:id` - Update worker
+- `DELETE /api/workers/:id` - Delete worker
 
-2. **Email not sending**
-   - Verify Gmail credentials in `.env`
-   - Enable 2FA and use App Password
-   - Check notification settings in app
+### Settings
+- `GET /api/settings/profile` - Get profile
+- `PUT /api/settings/profile` - Update profile
+- `PUT /api/settings/password` - Change password
+- `GET /api/settings/sessions` - Get active sessions
+- `DELETE /api/settings/sessions/:id` - Logout session
+- `GET /api/settings/notifications` - Get notification preferences
+- `PUT /api/settings/notifications` - Update preferences
+- `GET /api/settings/theme` - Get theme settings
+- `PUT /api/settings/theme` - Update theme
 
-3. **CORS errors**
-   - Update CORS configuration in `server.js`
-   - Add your frontend URL to allowed origins
+## 🧪 Testing
 
-## Contributing
+### Backend Tests
+```bash
+cd backend
+npm test
+```
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+### Frontend Tests
+```bash
+cd frontend
+npm test
+```
 
-## Author
+## 🚢 Deployment
 
-Cecilia Boutique Management System
+### Frontend (Vercel)
+1. Push code to GitHub
+2. Connect repository to Vercel
+3. Set environment variables
+4. Deploy
+
+### Backend (Render)
+1. Create new Web Service
+2. Connect GitHub repository
+3. Set build command: `cd backend && npm install`
+4. Set start command: `cd backend && npm start`
+5. Add environment variables
+6. Deploy
+
+See `DEPLOYMENT.md` for detailed instructions.
+
+## 📈 Performance Optimizations
+
+- **Lazy Loading**: Tab-based data fetching in Settings
+- **Consolidated API**: Single endpoint for dashboard data
+- **Caching**: Service worker caching for offline support
+- **Code Splitting**: Route-based code splitting with Vite
+- **Null Safety**: Graceful error handling throughout
+
+## 🐛 Known Issues
+
+- Email notifications require SMTP configuration
+- Background sync needs IndexedDB implementation
+- Push notifications require server setup
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📝 License
+
+This project is licensed under the MIT License.
+
+## 👥 Authors
+
+- **Mary Wanjiru** - Initial work
+
+## 🙏 Acknowledgments
+
+- Tailwind CSS for the styling framework
+- Lucide React for beautiful icons
+- Recharts for data visualization
+- MongoDB Atlas for database hosting
+
+## 📞 Support
+
+For support, email your-email@example.com or open an issue in the repository.
 
 ---
 
-**Built with ❤️ for efficient boutique management**
+**Cecilia Boutique Management** - Manage your boutique with elegance ✨
