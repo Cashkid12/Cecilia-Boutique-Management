@@ -4,13 +4,92 @@ const Expense = require('../models/Expense');
 const Inventory = require('../models/Inventory');
 const User = require('../models/User');
 const Settings = require('../models/Settings');
-const { sendWeeklyReport, sendMonthlyReport } = require('../utils/emailService');
+const notificationService = require('../services/notificationService');
+const { sendDailyReportEmail, sendWeeklyReport, sendMonthlyReport } = require('../utils/emailService');
 
-// Weekly Report - Every Monday at 8 AM
+// Daily Report - Every day at 8:00 PM
+cron.schedule('0 20 * * *', async () => {
+  console.log('Running daily report cron job...');
+  
+  try {
+    const admins = await User.find({ role: 'admin' });
+    if (admins.length === 0) return;
+
+    // Get today's date range
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Calculate today's sales
+    const todaySales = await Sale.aggregate([
+      { $match: { saleDate: { $gte: startOfDay, $lte: endOfDay } } },
+      {
+        $group: {
+          _id: null,
+          totalSales: { $sum: '$totalAmount' },
+          itemsSold: { $sum: '$quantity' },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Get top selling item today
+    const topItem = await Sale.aggregate([
+      { $match: { saleDate: { $gte: startOfDay, $lte: endOfDay } } },
+      {
+        $group: {
+          _id: '$item',
+          itemName: { $first: '$itemName' },
+          quantity: { $sum: '$quantity' }
+        }
+      },
+      { $sort: { quantity: -1 } },
+      { $limit: 1 }
+    ]);
+
+    const reportData = {
+      date: new Date().toLocaleDateString(),
+      totalSales: todaySales[0]?.totalSales || 0,
+      itemsSold: todaySales[0]?.itemsSold || 0,
+      topItem: topItem[0]?.itemName || null
+    };
+
+    // Create notifications for all admins
+    for (const admin of admins) {
+      // Check if user wants daily reports
+      // TODO: Fetch from user settings when implemented
+      const shouldSend = true; // Default to true for now
+      
+      if (shouldSend) {
+        // Create in-app notification
+        await notificationService.createReportNotification({
+          userId: admin._id,
+          type: 'report',
+          title: 'Daily Sales Report',
+          message: `Today's sales: KSh ${reportData.totalSales}. ${reportData.itemsSold} items sold.`,
+          data: reportData
+        });
+
+        // Send email
+        await sendDailyReportEmail(admin._id, reportData);
+      }
+    }
+
+    console.log('Daily report completed');
+  } catch (error) {
+    console.error('Error in daily report cron job:', error.message);
+  }
+});
+
+// Weekly Report - Every Monday at 8:00 AM
 cron.schedule('0 8 * * 1', async () => {
   console.log('Running weekly report cron job...');
   
   try {
+    const admins = await User.find({ role: 'admin' });
+    if (admins.length === 0) return;
+
     const settings = await Settings.findOne();
     if (!settings || !settings.weeklyReportEnabled) {
       console.log('Weekly reports are disabled');
@@ -77,6 +156,17 @@ cron.schedule('0 8 * * 1', async () => {
       lowStockCount
     };
 
+    // Create notifications for all admins
+    for (const admin of admins) {
+      await notificationService.createReportNotification({
+        userId: admin._id,
+        type: 'report',
+        title: 'Weekly Performance Report',
+        message: `Last week: KSh ${reportData.totalSales} sales. Profit: KSh ${reportData.netProfit}`,
+        data: reportData
+      });
+    }
+
     await sendWeeklyReport(reportData);
     console.log('Weekly report completed');
   } catch (error) {
@@ -84,11 +174,14 @@ cron.schedule('0 8 * * 1', async () => {
   }
 });
 
-// Monthly Report - 1st day of every month at 8 AM
-cron.schedule('0 8 1 * *', async () => {
+// Monthly Report - 1st day of every month at 9:00 AM
+cron.schedule('0 9 1 * *', async () => {
   console.log('Running monthly report cron job...');
   
   try {
+    const admins = await User.find({ role: 'admin' });
+    if (admins.length === 0) return;
+
     const settings = await Settings.findOne();
     if (!settings || !settings.monthlyReportEnabled) {
       console.log('Monthly reports are disabled');
@@ -183,6 +276,17 @@ cron.schedule('0 8 1 * *', async () => {
       topCategories,
       topWorkers
     };
+
+    // Create notifications for all admins
+    for (const admin of admins) {
+      await notificationService.createReportNotification({
+        userId: admin._id,
+        type: 'report',
+        title: 'Monthly Analytics Report',
+        message: `${reportData.month} sales: KSh ${reportData.totalSales}. View full report.`,
+        data: reportData
+      });
+    }
 
     await sendMonthlyReport(reportData);
     console.log('Monthly report completed');
