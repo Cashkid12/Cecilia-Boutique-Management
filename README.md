@@ -401,7 +401,7 @@ This project is licensed under the MIT License.
 
 ## 👥 Authors
 
-- **Mary Wanjiru** - Initial work
+- **JOE NTHIGA** - Initial work
 
 ## 🙏 Acknowledgments
 
@@ -412,7 +412,7 @@ This project is licensed under the MIT License.
 
 ## 📞 Support
 
-For support, email your-email@example.com or open an issue in the repository.
+For support, email joenthiga678@gmail.com or open an issue in the repository.
 
 ---
 
