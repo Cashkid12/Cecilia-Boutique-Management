@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 import {
   Monitor,
   Smartphone,
@@ -37,6 +38,7 @@ import toast from 'react-hot-toast';
 
 const Settings = () => {
   const { user } = useAuth();
+  const { isInstalled, isIOS, handleInstall } = usePWAInstall();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
@@ -1038,6 +1040,57 @@ const Settings = () => {
                       Outline
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* PWA Install Section */}
+              <div className="card p-6 border-2 border-gray-200">
+                <h4 className="text-lg font-bold text-dark mb-4 flex items-center gap-2">
+                  <Smartphone size={20} className="text-primary-dark" />
+                  App Installation
+                </h4>
+
+                <p className="text-sm text-gray-600 mb-4">
+                  Install Cecilia Boutique on your device for quick access and offline support.
+                </p>
+
+                <div className="flex items-center gap-2 mb-4">
+                  {isInstalled ? (
+                    <>
+                      <CheckCircle size={20} className="text-green-600" />
+                      <span className="text-sm font-medium text-green-600">Installed</span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
+                      <span className="text-sm text-gray-600">Not Installed</span>
+                    </>
+                  )}
+                </div>
+
+                {!isInstalled && (
+                  <button
+                    onClick={handleInstall}
+                    className="w-full px-4 py-3 bg-primary text-dark rounded-xl hover:bg-primary-dark transition-all font-medium flex items-center justify-center gap-2 mb-4 shadow-md"
+                  >
+                    <Smartphone size={18} />
+                    {isIOS ? 'Add to Home Screen' : 'Install App'}
+                  </button>
+                )}
+
+                <div className="space-y-2 text-sm text-gray-600">
+                  <p className="flex items-center gap-2">
+                    <span className="text-green-600">✓</span> One-tap access from home screen
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <span className="text-green-600">✓</span> Works offline
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <span className="text-green-600">✓</span> Full-screen experience
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <span className="text-green-600">✓</span> Faster loading
+                  </p>
                 </div>
               </div>
 

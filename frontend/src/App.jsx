@@ -4,6 +4,9 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { useState, useEffect } from 'react';
 import { authAPI } from './utils/api';
 
+// Components
+import PWAInstallPrompt from './components/PWAInstallPrompt';
+
 // Pages
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -93,6 +96,9 @@ function App() {
           <Route path="/" element={<RootRoute />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
+        
+        {/* PWA Install Prompt */}
+        <PWAInstallPrompt />
       </AuthProvider>
     </Router>
   );

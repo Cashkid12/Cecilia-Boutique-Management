@@ -84,13 +84,19 @@ const Sales = () => {
 
   const categories = [
     'All Stock',
-    'Trousers',
+    "Men's Trousers",
+    'Ladies Trousers',
+    'Boys Trouser',
+    'Girls Trouser',
+    'Shorts',
     'T-Shirts',
-    'Shirts',
-    'Dresses',
-    'Jackets',
-    'Shoes',
-    'Accessories'
+    'T-Shirt Boys',
+    'T-Shirt Girls',
+    'Socks',
+    'Vests',
+    'Jackets Men',
+    'Jackets Ladies',
+    'Jackets Kids'
   ];
 
   const [saleForm, setSaleForm] = useState({
@@ -627,7 +633,7 @@ const Sales = () => {
 
               <div>
                 <label className="block text-sm font-medium text-dark mb-2">
-                  Select Item {selectedCategory && selectedCategory !== 'All Stock' && (
+                  Select Item {selectedCategory && selectedCategory !== 'All' && (
                     <span className="text-xs text-gray-500 font-normal">- {selectedCategory}</span>
                   )}
                 </label>
@@ -642,8 +648,7 @@ const Sales = () => {
                     .filter(i => i.quantity > 0)
                     .map(item => (
                       <option key={item._id} value={item._id}>
-                        {item.itemName} - KSh {item.sellingPrice} ({item.quantity} available)
-                        {item.subcategory && ` - ${item.subcategory}`}
+                        {item.category} - KSh {item.buyingPrice} | Stock: {item.quantity} | Sell: KSh {item.sellingPrice}
                       </option>
                     ))}
                 </select>
@@ -779,11 +784,13 @@ const Sales = () => {
             <div className="bg-gray-50 rounded-xl p-6 space-y-3 mb-6">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Item</span>
-                <span className="font-medium text-dark">{selectedSale.itemName}</span>
+                <span className="font-medium text-dark">
+                  {selectedSale.itemName || `${selectedSale.category} - KSh ${selectedSale.buyingPrice}`}
+                </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Quantity</span>
-                <span className="font-medium text-dark">{selectedSale.quantity}</span>
+                <span className="font-medium text-dark">{selectedSale.quantity} × KSh {selectedSale.sellingPrice}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Payment</span>

@@ -8,7 +8,7 @@ const categoryConfig = {
   },
   "Ladies Trousers": {
     icon: "User",
-    prices: [700, 850, 800, 900],
+    prices: [600, 650, 800, 900],
     markup: 300
   },
   "Boys Trouser": {
@@ -18,7 +18,7 @@ const categoryConfig = {
   },
   "Girls Trouser": {
     icon: "Baby",
-    prices: [550, 570, 600, 650],
+    prices: [500, 550, 600, 650],
     markup: 250
   },
   "Shorts": {
@@ -86,10 +86,10 @@ const getCategoryMarkup = (category) => {
   return categoryConfig[category]?.markup || 300;
 };
 
-// Validate buying price for category
+// Validate buying price for category (allows any positive number, presets are suggestions)
 const isValidBuyingPrice = (category, price) => {
-  const prices = categoryConfig[category]?.prices || [];
-  return prices.includes(Number(price));
+  const numPrice = Number(price);
+  return numPrice > 0 && !isNaN(numPrice);
 };
 
 // Calculate selling price

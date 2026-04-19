@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Generate PWA Icons</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #F5EFE6; }
+    .icon { margin: 10px; display: inline-block; }
+    canvas { border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    button { 
+      background: #D6C2A1; 
+      color: #2E2E2E; 
+      border: none; 
+      padding: 12px 24px; 
+      border-radius: 8px; 
+      font-size: 16px; 
+      cursor: pointer;
+      margin: 10px;
+    }
+    button:hover { background: #B89B72; }
+  </style>
+</head>
+<body>
+  <h1>🎨 PWA Icon Generator</h1>
+  <p>Click the button to generate all icon sizes and download them</p>
+  <button onclick="generateAllIcons()">Generate & Download Icons</button>
+  <div id="preview"></div>
+
+  <script>
+    function generateIcon(size, canvas) {
+      const ctx = canvas.getContext('2d');
+      
+      // Background
+      ctx.fillStyle = '#D6C2A1';
+      ctx.beginPath();
+      const radius = size * 0.22;
+      ctx.roundRect(0, 0, size, size, radius);
+      ctx.fill();
+      
+      // Shopping bag icon
+      const centerX = size / 2;
+      const centerY = size / 2;
+      const bagWidth = size * 0.5;
+      const bagHeight = size * 0.45;
+      const bagTop = centerY - bagHeight / 2;
+      
+      // Bag body
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(centerX - bagWidth/2, bagTop + size*0.15, bagWidth, bagHeight - size*0.15);
+      
+      // Bag handle
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = size * 0.04;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      const handleWidth = bagWidth * 0.6;
+      ctx.moveTo(centerX - handleWidth/2, bagTop + size*0.15);
+      ctx.quadraticCurveTo(centerX, bagTop - size*0.05, centerX + handleWidth/2, bagTop + size*0.15);
+      ctx.stroke();
+      
+      // Fold lines
+      ctx.strokeStyle = '#D6C2A1';
+      ctx.lineWidth = size * 0.008;
+      for (let i = 1; i <= 2; i++) {
+        const y = bagTop + size*0.15 + (bagHeight - size*0.15) * (i / 3);
+        ctx.beginPath();
+        ctx.moveTo(centerX - bagWidth/2, y);
+        ctx.lineTo(centerX + bagWidth/2, y);
+        ctx.stroke();
+      }
+    }
+
+    function generateAllIcons() {
+      const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+      const preview = document.getElementById('preview');
+      preview.innerHTML = '<h2>Preview:</h2>';
+      
+      sizes.forEach(size => {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        canvas.className = 'icon';
+        generateIcon(size, canvas);
+        preview.appendChild(canvas);
+        
+        // Download
+        canvas.toBlob(blob => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `icon-${size}x${size}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+        });
+      });
+      
+      // Generate maskable icon (with padding)
+      const maskCanvas = document.createElement('canvas');
+      maskCanvas.width = 512;
+      maskCanvas.height = 512;
+      const ctx = maskCanvas.getContext('2d');
+      
+      // Background
+      ctx.fillStyle = '#D6C2A1';
+      ctx.beginPath();
+      ctx.roundRect(0, 0, 512, 512, 112);
+      ctx.fill();
+      
+      // Shopping bag (smaller for safe zone)
+      ctx.save();
+      ctx.translate(128, 128); // 25% padding
+      ctx.scale(0.5, 0.5);
+      
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = 512;
+      tempCanvas.height = 512;
+      generateIcon(512, tempCanvas);
+      ctx.drawImage(tempCanvas, 0, 0);
+      ctx.restore();
+      
+      maskCanvas.className = 'icon';
+      preview.appendChild(maskCanvas);
+      
+      maskCanvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'maskable-icon-512x512.png';
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+      
+      alert('All icons generated! Check your downloads folder and move them to frontend/public/icons/');
+    }
+  </script>
+</body>
+</html>

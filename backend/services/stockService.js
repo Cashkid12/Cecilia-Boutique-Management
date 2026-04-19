@@ -24,13 +24,10 @@ exports.updateStock = async (itemId, newQuantity, actionType = 'manual', userId 
     const oldQuantity = item.quantity;
     item.quantity = newQuantity;
     
-    // Update stock status
-    const settings = await Settings.findOne();
-    const threshold = settings?.lowStockThreshold || 3;
-    
+    // Update stock status (simplified threshold < 5)
     if (newQuantity === 0) {
       item.stockStatus = 'out_of_stock';
-    } else if (newQuantity <= threshold) {
+    } else if (newQuantity < 5) {
       item.stockStatus = 'low_stock';
     } else {
       item.stockStatus = 'in_stock';
@@ -50,13 +47,13 @@ exports.updateStock = async (itemId, newQuantity, actionType = 'manual', userId 
       timestamp: new Date()
     };
 
-    // Check and trigger low stock alerts
-    if (newQuantity <= threshold && oldQuantity > threshold) {
+    // Check and trigger low stock alerts (threshold < 5)
+    if (newQuantity < 5 && oldQuantity >= 5) {
       await this.handleLowStock(item);
     }
 
     // Check if restocked
-    if (newQuantity > threshold && oldQuantity <= threshold) {
+    if (newQuantity >= 5 && oldQuantity < 5) {
       await createNotification(
         'system',
         `Restocked: ${item.itemName} (${newQuantity} units)`,
@@ -87,15 +84,13 @@ exports.handleLowStock = async (item) => {
       'Inventory'
     );
 
-    // Get all low stock items for email
-    const settings = await Settings.findOne();
-    const threshold = settings?.lowStockThreshold || 3;
-    
+    // Get all low stock items for email (threshold < 5)
     const lowStockItems = await Inventory.find({
-      $expr: { $lte: ['$quantity', threshold] }
-    }).select('itemName category subcategory quantity');
+      quantity: { $lt: 5 }
+    }).select('itemName category quantity');
 
     // Send email if enabled
+    const settings = await Settings.findOne();
     if (settings?.lowStockEmailEnabled && lowStockItems.length > 0) {
       await sendLowStockEmail(lowStockItems);
     }
@@ -110,9 +105,6 @@ exports.handleLowStock = async (item) => {
 // Calculate comprehensive stock metrics
 exports.calculateStockMetrics = async () => {
   try {
-    const settings = await Settings.findOne();
-    const threshold = settings?.lowStockThreshold || 3;
-
     const metrics = await Inventory.aggregate([
       {
         $group: {
@@ -126,7 +118,7 @@ exports.calculateStockMetrics = async () => {
     ]);
 
     const lowStockCount = await Inventory.countDocuments({
-      $expr: { $lte: ['$quantity', threshold] }
+      quantity: { $lt: 5 }
     });
 
     const outOfStockCount = await Inventory.countDocuments({ quantity: 0 });

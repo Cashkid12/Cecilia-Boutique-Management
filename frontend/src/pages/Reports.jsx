@@ -21,7 +21,12 @@ import {
   Crown,
   Layers,
   Footprints,
-  Star
+  Star,
+  User,
+  Baby,
+  Sun,
+  Wind,
+  Circle
 } from 'lucide-react';
 import {
   LineChart,
@@ -79,18 +84,24 @@ const Reports = () => {
   const [categorySummary, setCategorySummary] = useState(null);
   const [bestCategory, setBestCategory] = useState(null);
 
-  // Category icon mapping
+  // Category icon mapping for 13 categories
   const categoryIcons = {
-    'Trousers': Briefcase,
+    "Men's Trousers": Briefcase,
+    'Ladies Trousers': Briefcase,
+    'Boys Trouser': Baby,
+    'Girls Trouser': Baby,
+    'Shorts': Sun,
     'T-Shirts': Shirt,
-    'Shirts': Shirt,
-    'Dresses': Crown,
-    'Jackets': Layers,
-    'Shoes': Footprints,
-    'Accessories': Star
+    'T-Shirt Boys': Shirt,
+    'T-Shirt Girls': Shirt,
+    'Socks': Circle,
+    'Vests': Shirt,
+    'Jackets Men': Wind,
+    'Jackets Ladies': Wind,
+    'Jackets Kids': Wind
   };
 
-  const categoryColors = ['#D6C2A1', '#B89B72', '#8B7355', '#A0522D', '#CD853F', '#DEB887', '#F5DEB3'];
+  const categoryColors = ['#D6C2A1', '#B89B72', '#8B7355', '#A0522D', '#CD853F', '#DEB887', '#F5DEB3', '#D2B48C', '#C4A882', '#B8956A', '#A67B5B', '#8B6914', '#6B4423'];
 
   useEffect(() => {
     fetchReportData();

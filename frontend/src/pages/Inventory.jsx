@@ -31,7 +31,12 @@ import {
   Bell,
   CheckCircle,
   AlertCircle,
-  Archive
+  Archive,
+  User,
+  Baby,
+  Sun,
+  Wind,
+  Circle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -45,10 +50,8 @@ const Inventory = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All Stock');
-  const [selectedSubcategory, setSelectedSubcategory] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [statusFilter, setStatusFilter] = useState('');
-  const [sizeFilter, setSizeFilter] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [categorySummary, setCategorySummary] = useState(null);
@@ -56,28 +59,62 @@ const Inventory = () => {
 
   const [formData, setFormData] = useState({
     itemName: '',
-    category: 'Trousers',
-    subcategory: '',
+    category: "Men's Trousers",
     buyingPrice: '',
     sellingPrice: '',
-    quantity: '',
-    size: 'M',
-    color: '',
-    supplier: '',
-    lowStockThreshold: 5
+    quantity: ''
   });
 
-  // Category configuration with icons and subcategories
+  // Category configuration with 13 categories and icons
   const categories = [
-    { id: 'All Stock', name: 'All Stock', icon: Layers, subcategories: [] },
-    { id: 'Trousers', name: 'Trousers', icon: Briefcase, subcategories: ['Jeans', 'Khaki', 'Official', 'Casual', 'New Arrival'] },
-    { id: 'T-Shirts', name: 'T-Shirts', icon: Shirt, subcategories: ['Polo', 'Round Neck', 'V-Neck', 'Graphic', 'New Arrival'] },
-    { id: 'Shirts', name: 'Shirts', icon: Shirt, subcategories: ['Formal', 'Casual', 'Denim', 'Linen', 'New Arrival'] },
-    { id: 'Dresses', name: 'Dresses', icon: Crown, subcategories: ['Maxi', 'Mini', 'Midi', 'Cocktail', 'New Arrival'] },
-    { id: 'Jackets', name: 'Jackets', icon: Layers, subcategories: ['Blazer', 'Bomber', 'Denim', 'Leather', 'New Arrival'] },
-    { id: 'Shoes', name: 'Shoes', icon: Footprints, subcategories: ['Sneakers', 'Formal', 'Casual', 'Boots', 'New Arrival'] },
-    { id: 'Accessories', name: 'Accessories', icon: Star, subcategories: ['Belts', 'Bags', 'Hats', 'Jewelry', 'New Arrival'] }
+    { id: 'All', name: 'All', icon: Layers },
+    { id: "Men's Trousers", name: "Men's Trousers", icon: Briefcase },
+    { id: 'Ladies Trousers', name: 'Ladies Trousers', icon: Briefcase },
+    { id: 'Boys Trouser', name: 'Boys Trouser', icon: Baby },
+    { id: 'Girls Trouser', name: 'Girls Trouser', icon: Baby },
+    { id: 'Shorts', name: 'Shorts', icon: Sun },
+    { id: 'T-Shirts', name: 'T-Shirts', icon: Shirt },
+    { id: 'T-Shirt Boys', name: 'T-Shirt Boys', icon: Shirt },
+    { id: 'T-Shirt Girls', name: 'T-Shirt Girls', icon: Shirt },
+    { id: 'Socks', name: 'Socks', icon: Circle },
+    { id: 'Vests', name: 'Vests', icon: Shirt },
+    { id: 'Jackets Men', name: 'Jackets Men', icon: Wind },
+    { id: 'Jackets Ladies', name: 'Jackets Ladies', icon: Wind },
+    { id: 'Jackets Kids', name: 'Jackets Kids', icon: Wind }
   ];
+
+  // Category pricing tiers
+  const categoryPrices = {
+    "Men's Trousers": [700, 850, 900, 950],
+    'Ladies Trousers': [600, 650, 800, 900],
+    'Boys Trouser': [550, 600, 700, 750],
+    'Girls Trouser': [500, 550, 600, 650],
+    'Shorts': [550, 600, 750, 200],
+    'T-Shirts': [420, 430, 600, 550],
+    'T-Shirt Boys': [320, 500, 450],
+    'T-Shirt Girls': [330, 350],
+    'Socks': [400, 500],
+    'Vests': [320, 450],
+    'Jackets Men': [900, 1000, 1200, 1300, 1600],
+    'Jackets Ladies': [1100, 1200, 1000],
+    'Jackets Kids': [750, 850, 900]
+  };
+
+  const categoryMarkup = {
+    "Men's Trousers": 300,
+    'Ladies Trousers': 300,
+    'Boys Trouser': 250,
+    'Girls Trouser': 250,
+    'Shorts': 250,
+    'T-Shirts': 200,
+    'T-Shirt Boys': 150,
+    'T-Shirt Girls': 150,
+    'Socks': 200,
+    'Vests': 150,
+    'Jackets Men': 500,
+    'Jackets Ladies': 500,
+    'Jackets Kids': 400
+  };
 
   useEffect(() => {
     fetchInventory();
@@ -107,18 +144,18 @@ const Inventory = () => {
   // Get category stats
   const getCategoryStats = (categoryId) => {
     if (!categorySummary || !categorySummary.stockByCategory) {
-      const items = categoryId === 'All Stock' 
+      const items = categoryId === 'All' 
         ? inventory 
         : inventory.filter(i => i.category === categoryId);
       
       return {
         totalItems: items.reduce((sum, i) => sum + i.quantity, 0),
-        lowStockCount: items.filter(i => i.quantity <= (i.lowStockThreshold || 5)).length,
+        lowStockCount: items.filter(i => i.quantity < 5).length,
         outOfStockCount: items.filter(i => i.quantity === 0).length
       };
     }
 
-    if (categoryId === 'All Stock') {
+    if (categoryId === 'All') {
       const totals = categorySummary.stockByCategory.reduce((acc, cat) => ({
         totalItems: acc.totalItems + cat.totalItems,
         lowStockCount: acc.lowStockCount + cat.lowStockCount,
@@ -142,13 +179,8 @@ const Inventory = () => {
     let filtered = inventory;
 
     // Filter by category
-    if (selectedCategory !== 'All Stock') {
+    if (selectedCategory !== 'All') {
       filtered = filtered.filter(item => item.category === selectedCategory);
-    }
-
-    // Filter by subcategory
-    if (selectedSubcategory) {
-      filtered = filtered.filter(item => item.subcategory === selectedSubcategory);
     }
 
     // Filter by search term
@@ -156,29 +188,21 @@ const Inventory = () => {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(item =>
         item.itemName.toLowerCase().includes(term) ||
-        item.category.toLowerCase().includes(term) ||
-        item.subcategory?.toLowerCase().includes(term) ||
-        item.color?.toLowerCase().includes(term) ||
-        item.size?.toLowerCase().includes(term)
+        item.category.toLowerCase().includes(term)
       );
     }
 
-    // Filter by status
+    // Filter by status (simplified: < 5 is low stock)
     if (statusFilter === 'in-stock') {
-      filtered = filtered.filter(item => item.quantity > (item.lowStockThreshold || 5));
+      filtered = filtered.filter(item => item.quantity >= 5);
     } else if (statusFilter === 'low-stock') {
-      filtered = filtered.filter(item => item.quantity > 0 && item.quantity <= (item.lowStockThreshold || 5));
+      filtered = filtered.filter(item => item.quantity > 0 && item.quantity < 5);
     } else if (statusFilter === 'out-of-stock') {
       filtered = filtered.filter(item => item.quantity === 0);
     }
 
-    // Filter by size
-    if (sizeFilter) {
-      filtered = filtered.filter(item => item.size === sizeFilter);
-    }
-
     return filtered;
-  }, [inventory, selectedCategory, selectedSubcategory, searchTerm, statusFilter, sizeFilter]);
+  }, [inventory, selectedCategory, searchTerm, statusFilter]);
 
   // Get status badge
   const getStatusBadge = (item) => {
@@ -214,15 +238,10 @@ const Inventory = () => {
   const resetForm = () => {
     setFormData({
       itemName: '',
-      category: 'Trousers',
-      subcategory: '',
+      category: "Men's Trousers",
       buyingPrice: '',
       sellingPrice: '',
-      quantity: '',
-      size: 'M',
-      color: '',
-      supplier: '',
-      lowStockThreshold: 5
+      quantity: ''
     });
     setEditingItem(null);
   };
@@ -232,14 +251,9 @@ const Inventory = () => {
     setFormData({
       itemName: item.itemName,
       category: item.category,
-      subcategory: item.subcategory || '',
       buyingPrice: item.buyingPrice,
       sellingPrice: item.sellingPrice,
-      quantity: item.quantity,
-      size: item.size || 'M',
-      color: item.color || '',
-      supplier: item.supplier || '',
-      lowStockThreshold: item.lowStockThreshold || 5
+      quantity: item.quantity
     });
     setShowModal(true);
   };
@@ -254,6 +268,25 @@ const Inventory = () => {
     } catch (error) {
       toast.error('Failed to delete item');
     }
+  };
+
+  // Handle category change - reset buying and selling prices
+  const handleCategoryChange = (category) => {
+    setFormData({
+      ...formData,
+      category,
+      buyingPrice: '',
+      sellingPrice: ''
+    });
+  };
+
+  // Handle buying price selection
+  const handleBuyingPriceChange = (price) => {
+    setFormData({
+      ...formData,
+      buyingPrice: price,
+      itemName: `KSh ${price}`
+    });
   };
 
   const handleRestock = (item) => {
@@ -383,7 +416,7 @@ const Inventory = () => {
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
           <input
             type="text"
-            placeholder={`Search ${selectedCategory !== 'All Stock' ? selectedCategory.toLowerCase() : 'all inventory'}...`}
+            placeholder={`Search ${selectedCategory !== 'All' ? selectedCategory.toLowerCase() : 'inventory'}...`}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:border-primary focus:outline-none transition-all text-dark"
@@ -450,41 +483,10 @@ const Inventory = () => {
         </div>
       </div>
 
-      {/* Subcategory Pills */}
-      {currentCategory && currentCategory.subcategories.length > 0 && (
-        <div className="mb-6 animate-fade-in">
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setSelectedSubcategory('')}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                selectedSubcategory === ''
-                  ? 'bg-primary text-dark shadow-md'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              All
-            </button>
-            {currentCategory.subcategories.map((sub) => (
-              <button
-                key={sub}
-                onClick={() => setSelectedSubcategory(sub)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  selectedSubcategory === sub
-                    ? 'bg-primary text-dark shadow-md'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {sub}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Active Filters */}
       {showFilters && (
         <div className="mb-6 p-4 bg-gray-50 rounded-2xl animate-fade-in">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-dark mb-2">Status</label>
               <select
@@ -498,25 +500,9 @@ const Inventory = () => {
                 <option value="out-of-stock">Out of Stock</option>
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-dark mb-2">Size</label>
-              <select
-                value={sizeFilter}
-                onChange={(e) => setSizeFilter(e.target.value)}
-                className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:border-primary focus:outline-none"
-              >
-                <option value="">All Sizes</option>
-                <option value="XS">XS</option>
-                <option value="S">S</option>
-                <option value="M">M</option>
-                <option value="L">L</option>
-                <option value="XL">XL</option>
-                <option value="XXL">XXL</option>
-              </select>
-            </div>
             <div className="flex items-end">
               <button
-                onClick={() => { setStatusFilter(''); setSizeFilter(''); }}
+                onClick={() => { setStatusFilter(''); }}
                 className="w-full px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 transition-all"
               >
                 Clear Filters
@@ -530,7 +516,7 @@ const Inventory = () => {
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm text-gray-600">
           Showing <span className="font-semibold text-dark">{filteredInventory.length}</span> items
-          {selectedCategory !== 'All Stock' && <span> in <span className="font-semibold text-dark">{selectedCategory}</span></span>}
+          {selectedCategory !== 'All' && <span> in <span className="font-semibold text-dark">{selectedCategory}</span></span>}
         </p>
       </div>
 
@@ -553,9 +539,6 @@ const Inventory = () => {
                       <h3 className="font-bold text-dark text-lg mb-1">{item.itemName}</h3>
                       <div className="flex items-center gap-2 text-xs text-gray-600">
                         <span className="px-2 py-0.5 bg-gray-100 rounded-md">{item.category}</span>
-                        {item.subcategory && (
-                          <span className="px-2 py-0.5 bg-primary-light rounded-md">{item.subcategory}</span>
-                        )}
                       </div>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${status.color}`}>
@@ -572,21 +555,17 @@ const Inventory = () => {
                       <p className="font-bold text-dark text-lg">{item.quantity}</p>
                     </div>
                     <div>
-                      <p className="text-gray-600 text-xs">Selling Price</p>
-                      <p className="font-bold text-dark">KSh {item.sellingPrice.toLocaleString()}</p>
+                      <p className="text-gray-600 text-xs">Buying Price</p>
+                      <p className="font-bold text-dark">KSh {item.buyingPrice.toLocaleString()}</p>
                     </div>
-                    {item.size && (
-                      <div>
-                        <p className="text-gray-600 text-xs">Size</p>
-                        <p className="font-semibold text-dark">{item.size}</p>
-                      </div>
-                    )}
-                    {item.color && (
-                      <div>
-                        <p className="text-gray-600 text-xs">Color</p>
-                        <p className="font-semibold text-dark capitalize">{item.color}</p>
-                      </div>
-                    )}
+                    <div>
+                      <p className="text-gray-600 text-xs">Selling Price</p>
+                      <p className="font-bold text-green-600">KSh {item.sellingPrice.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600 text-xs">Profit/Item</p>
+                      <p className="font-bold text-blue-600">KSh {(item.sellingPrice - item.buyingPrice).toLocaleString()}</p>
+                    </div>
                   </div>
 
                   <div className="pt-3 border-t border-gray-100">
@@ -652,7 +631,7 @@ const Inventory = () => {
           <p className="text-gray-600 mb-4">
             {searchTerm
               ? `No results for "${searchTerm}"`
-              : (selectedCategory !== 'All Stock'
+              : (selectedCategory !== 'All'
               ? `No ${selectedCategory.toLowerCase()} in stock`
               : 'No inventory items')}
             . Add new stock to get started
@@ -681,48 +660,109 @@ const Inventory = () => {
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Category Selection */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-dark mb-2">Item Name *</label>
-                  <input
-                    type="text"
-                    value={formData.itemName}
-                    onChange={(e) => setFormData({ ...formData, itemName: e.target.value })}
-                    className="input-field"
-                    required
-                  />
-                </div>
-
-                <div>
                   <label className="block text-sm font-medium text-dark mb-2">Category *</label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value, subcategory: '' })}
-                    className="input-field"
-                    required
-                  >
-                    {categories.filter(c => c.id !== 'All Stock').map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-dark mb-2">Subcategory</label>
-                  <select
-                    value={formData.subcategory}
-                    onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
-                    className="input-field"
-                  >
-                    <option value="">Select subcategory</option>
-                    {categories
-                      .find(c => c.id === formData.category)
-                      ?.subcategories.map(sub => (
-                        <option key={sub} value={sub}>{sub}</option>
+                  {editingItem ? (
+                    // Locked category for editing
+                    <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-dark font-medium">
+                      {formData.category}
+                    </div>
+                  ) : (
+                    // Selectable category for new items
+                    <select
+                      value={formData.category}
+                      onChange={(e) => handleCategoryChange(e.target.value)}
+                      className="input-field"
+                      required
+                    >
+                      <option value="">Select Category</option>
+                      {categories.filter(c => c.id !== 'All').map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
                       ))}
-                  </select>
+                    </select>
+                  )}
                 </div>
 
-                <div>
+                {/* Buying Price Input with Quick-Select Pills */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-dark mb-2">
+                    Buying Price *
+                    <span className="text-xs text-gray-500 ml-2">(Enter or select)</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">KSh</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.buyingPrice}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setFormData({ 
+                          ...formData, 
+                          buyingPrice: value,
+                          itemName: value ? `KSh ${value}` : ''
+                        });
+                      }}
+                      className="input-field pl-12"
+                      placeholder="Enter buying price"
+                      required
+                      disabled={!formData.category}
+                    />
+                  </div>
+                  
+                  {/* Quick-Select Pills */}
+                  {formData.category && categoryPrices[formData.category] && (
+                    <div className="mt-3">
+                      <p className="text-xs text-gray-500 mb-2">Quick select:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {categoryPrices[formData.category].map(price => (
+                          <button
+                            key={price}
+                            type="button"
+                            onClick={() => {
+                              setFormData({ 
+                                ...formData, 
+                                buyingPrice: price,
+                                itemName: `KSh ${price}`
+                              });
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                              formData.buyingPrice === price
+                                ? 'bg-primary text-dark shadow-md'
+                                : 'bg-primary-light text-dark hover:bg-primary'
+                            }`}
+                          >
+                            KSh {price}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Manual Selling Price Input */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-dark mb-2">
+                    Selling Price *
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">KSh</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.sellingPrice}
+                      onChange={(e) => setFormData({ ...formData, sellingPrice: e.target.value })}
+                      className="input-field pl-12"
+                      placeholder="Enter your selling price"
+                      required
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Set the price you want to sell this item for</p>
+                </div>
+
+                {/* Quantity */}
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-dark mb-2">Quantity *</label>
                   <input
                     type="number"
@@ -730,81 +770,35 @@ const Inventory = () => {
                     value={formData.quantity}
                     onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                     className="input-field"
+                    placeholder="Enter quantity in stock"
                     required
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-dark mb-2">Size</label>
-                  <select
-                    value={formData.size}
-                    onChange={(e) => setFormData({ ...formData, size: e.target.value })}
-                    className="input-field"
-                  >
-                    <option value="XS">XS</option>
-                    <option value="S">S</option>
-                    <option value="M">M</option>
-                    <option value="L">L</option>
-                    <option value="XL">XL</option>
-                    <option value="XXL">XXL</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-dark mb-2">Buying Price (KSh) *</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.buyingPrice}
-                    onChange={(e) => setFormData({ ...formData, buyingPrice: e.target.value })}
-                    className="input-field"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-dark mb-2">Selling Price (KSh) *</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.sellingPrice}
-                    onChange={(e) => setFormData({ ...formData, sellingPrice: e.target.value })}
-                    className="input-field"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-dark mb-2">Color</label>
-                  <input
-                    type="text"
-                    value={formData.color}
-                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                    className="input-field"
-                    placeholder="e.g., Black, Blue"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-dark mb-2">Supplier</label>
-                  <input
-                    type="text"
-                    value={formData.supplier}
-                    onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
-                    className="input-field"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-dark mb-2">Low Stock Threshold</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={formData.lowStockThreshold}
-                    onChange={(e) => setFormData({ ...formData, lowStockThreshold: e.target.value })}
-                    className="input-field"
-                  />
-                </div>
+                {/* Preview */}
+                {formData.buyingPrice && formData.sellingPrice && (
+                  <div className="md:col-span-2 p-4 bg-primary-light rounded-xl">
+                    <p className="text-sm font-medium text-dark mb-2">Item Preview:</p>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="text-gray-600">Item:</span>
+                        <p className="font-semibold">{formData.category} - KSh {formData.buyingPrice}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Buying Price:</span>
+                        <p className="font-semibold">KSh {formData.buyingPrice.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Selling Price:</span>
+                        <p className="font-semibold text-green-600">KSh {Number(formData.sellingPrice).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Profit per Item:</span>
+                        <p className="font-semibold text-blue-600">KSh {(Number(formData.sellingPrice) - formData.buyingPrice).toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3 pt-4">

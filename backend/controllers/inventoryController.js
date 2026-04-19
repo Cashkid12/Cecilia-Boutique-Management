@@ -54,14 +54,18 @@ exports.addInventoryItem = async (req, res) => {
       });
     }
     
-    // Calculate selling price if not provided
-    const finalSellingPrice = sellingPrice || calculateSellingPrice(buyingPrice, getCategoryMarkup(category));
+    // Validate selling price is provided and greater than 0
+    if (!sellingPrice || sellingPrice <= 0) {
+      return res.status(400).json({ 
+        message: 'Selling price must be greater than 0' 
+      });
+    }
     
     const item = await Inventory.create({
-      itemName,
+      itemName: itemName || `KSh ${buyingPrice}`,
       category,
       buyingPrice,
-      sellingPrice: finalSellingPrice,
+      sellingPrice,
       quantity
     });
     
@@ -101,11 +105,13 @@ exports.updateInventoryItem = async (req, res) => {
           message: 'Invalid buying price for selected category' 
         });
       }
-      
-      // Auto-calculate selling price if not provided
-      if (!req.body.sellingPrice) {
-        req.body.sellingPrice = calculateSellingPrice(buyingPrice, getCategoryMarkup(category));
-      }
+    }
+    
+    // Validate selling price if provided
+    if (req.body.sellingPrice && req.body.sellingPrice <= 0) {
+      return res.status(400).json({ 
+        message: 'Selling price must be greater than 0' 
+      });
     }
 
     const updatedItem = await Inventory.findByIdAndUpdate(

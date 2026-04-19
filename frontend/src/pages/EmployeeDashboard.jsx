@@ -21,7 +21,11 @@ import {
   Briefcase,
   Crown,
   Layers,
-  Footprints
+  Footprints,
+  Baby,
+  Sun,
+  Wind,
+  Circle
 } from 'lucide-react';
 import {
   LineChart,
@@ -60,15 +64,21 @@ const EmployeeDashboard = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [categorySummary, setCategorySummary] = useState(null);
 
-  // Category icon mapping
+  // Category icon mapping for 13 categories
   const categoryIcons = {
-    'Trousers': Briefcase,
+    "Men's Trousers": Briefcase,
+    'Ladies Trousers': Briefcase,
+    'Boys Trouser': Baby,
+    'Girls Trouser': Baby,
+    'Shorts': Sun,
     'T-Shirts': Shirt,
-    'Shirts': Shirt,
-    'Dresses': Crown,
-    'Jackets': Layers,
-    'Shoes': Footprints,
-    'Accessories': Star
+    'T-Shirt Boys': Shirt,
+    'T-Shirt Girls': Shirt,
+    'Socks': Circle,
+    'Vests': Shirt,
+    'Jackets Men': Wind,
+    'Jackets Ladies': Wind,
+    'Jackets Kids': Wind
   };
 
   // Real-time dashboard data with auto-refresh

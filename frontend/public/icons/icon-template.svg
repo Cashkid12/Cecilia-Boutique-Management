@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="#D6C2A1"/>
+  
+  <!-- Shopping Bag Icon -->
+  <g transform="translate(106, 126)">
+    <!-- Bag Body -->
+    <path d="M50 80H250C258.837 80 266 87.1634 266 96V240C266 248.837 258.837 256 250 256H50C41.1634 256 34 248.837 34 240V96C34 87.1634 41.1634 80 50 80Z" fill="white"/>
+    
+    <!-- Bag Handle -->
+    <path d="M100 80V60C100 37.9086 117.909 20 140 20H160C182.091 20 200 37.9086 200 60V80" stroke="white" stroke-width="16" stroke-linecap="round"/>
+    
+    <!-- Shopping Bag Fold Lines -->
+    <line x1="34" y1="140" x2="266" y2="140" stroke="#D6C2A1" stroke-width="4"/>
+    <line x1="34" y1="200" x2="266" y2="200" stroke="#D6C2A1" stroke-width="4"/>
+  </g>
+</svg>
