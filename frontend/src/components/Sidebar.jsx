@@ -9,7 +9,8 @@ import {
   FileText,
   Settings,
   User,
-  LogOut
+  LogOut,
+  Bell
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
@@ -24,6 +25,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     { icon: Users, label: 'Workers', path: '/admin/workers' },
     { icon: Wallet, label: 'Expenses', path: '/admin/expenses' },
     { icon: FileText, label: 'Reports', path: '/admin/reports' },
+    { icon: Bell, label: 'Notifications', path: '/admin/notifications' },
     { icon: Settings, label: 'Settings', path: '/admin/settings' }
   ];
 

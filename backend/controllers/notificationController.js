@@ -191,3 +191,116 @@ exports.createNotificationHelper = async ({ userId, type, title, message, data }
     return null;
   }
 };
+
+// @desc    Get all notifications grouped by date
+// @route   GET /api/notifications/all
+// @access  Private
+exports.getAllNotificationsGrouped = async (req, res) => {
+  try {
+    const { page = 1, limit = 20, type, search } = req.query;
+    
+    const query = { userId: req.user._id };
+    
+    if (type && type !== 'all') {
+      query.type = type;
+    }
+    
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { message: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    const notifications = await Notification.find(query)
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit) * parseInt(page))
+      .skip((parseInt(page) - 1) * parseInt(limit));
+    
+    const total = await Notification.countDocuments(query);
+    
+    // Group notifications by date
+    const grouped = {
+      today: [],
+      yesterday: [],
+      thisWeek: [],
+      older: []
+    };
+    
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfYesterday = new Date(startOfDay);
+    startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+    const startOfWeek = new Date(startOfDay);
+    startOfWeek.setDate(startOfWeek.getDate() - 7);
+    
+    notifications.forEach(notification => {
+      const notifDate = new Date(notification.createdAt);
+      
+      if (notifDate >= startOfDay) {
+        grouped.today.push(notification);
+      } else if (notifDate >= startOfYesterday) {
+        grouped.yesterday.push(notification);
+      } else if (notifDate >= startOfWeek) {
+        grouped.thisWeek.push(notification);
+      } else {
+        grouped.older.push(notification);
+      }
+    });
+    
+    res.json({
+      grouped,
+      total,
+      page: parseInt(page),
+      pages: Math.ceil(total / parseInt(limit))
+    });
+  } catch (error) {
+    console.error('[Get All Notifications Error]:', error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Clear all notifications for user
+// @route   DELETE /api/notifications/clear-all
+// @access  Private
+exports.clearAllNotifications = async (req, res) => {
+  try {
+    const result = await Notification.deleteMany({
+      userId: req.user._id
+    });
+    
+    res.json({ 
+      message: 'All notifications cleared',
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('[Clear All Notifications Error]:', error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Toggle notification read status
+// @route   PUT /api/notifications/:id/toggle-read
+// @access  Private
+exports.toggleReadStatus = async (req, res) => {
+  try {
+    const notification = await Notification.findOne({
+      _id: req.params.id,
+      userId: req.user._id
+    });
+    
+    if (!notification) {
+      return res.status(404).json({ message: 'Notification not found' });
+    }
+    
+    notification.read = !notification.read;
+    await notification.save();
+    
+    res.json({ 
+      message: `Notification marked as ${notification.read ? 'read' : 'unread'}`,
+      notification 
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

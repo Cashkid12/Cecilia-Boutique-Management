@@ -18,6 +18,7 @@ import Expenses from './pages/Expenses';
 import Workers from './pages/Workers';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import Notifications from './pages/Notifications';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, adminOnly = false }) => {
@@ -114,6 +115,7 @@ const AdminRoutes = () => {
       <Route path="expenses" element={<Expenses />} />
       <Route path="workers" element={<Workers />} />
       <Route path="reports" element={<Reports />} />
+      <Route path="notifications" element={<Notifications />} />
       <Route path="settings" element={<Settings />} />
       <Route path="" element={<Navigate to="/admin/dashboard" replace />} />
     </Routes>
