@@ -1,6 +1,7 @@
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const emailService = require('../utils/emailService');
+const { sendNotificationToUser } = require('../server');
 
 /**
  * Centralized Notification Service
@@ -22,7 +23,23 @@ exports.createNotification = async ({ userId, type, title, message, data }) => {
         data: data || {}
       }));
       
-      await Notification.insertMany(notifications);
+      const createdNotifications = await Notification.insertMany(notifications);
+      
+      // Send real-time notifications to all connected admins
+      admins.forEach(admin => {
+        const notification = {
+          _id: createdNotifications.find(n => n.userId.toString() === admin._id.toString())?._id,
+          userId: admin._id,
+          type,
+          title,
+          message,
+          data: data || {},
+          read: false,
+          createdAt: new Date()
+        };
+        sendNotificationToUser(admin._id.toString(), notification);
+      });
+      
       return notifications;
     }
     
@@ -33,6 +50,18 @@ exports.createNotification = async ({ userId, type, title, message, data }) => {
       title,
       message,
       data: data || {}
+    });
+
+    // Send real-time notification via WebSocket
+    sendNotificationToUser(userId.toString(), {
+      _id: notification._id,
+      userId: notification.userId,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      data: notification.data,
+      read: false,
+      createdAt: notification.createdAt
     });
 
     return notification;

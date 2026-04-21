@@ -1,10 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bell, CheckCheck, ShoppingCart, AlertTriangle, Wallet, FileText, Settings } from 'lucide-react';
+import { Bell, CheckCheck, ShoppingCart, AlertTriangle, Wallet, FileText, Settings, Wifi, WifiOff } from 'lucide-react';
 import api from '../utils/api';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../hooks/useSocket';
 
 const NotificationDropdown = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { isConnected, notifications: realTimeNotifications, setNotifications: setRealTimeNotifications } = useSocket(user);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -19,7 +23,8 @@ const NotificationDropdown = () => {
         api.get('/notifications/unread-count')
       ]);
       
-      setNotifications(notifRes.data.notifications || []);
+      const fetchedNotifications = notifRes.data.notifications || [];
+      setNotifications(fetchedNotifications);
       setUnreadCount(countRes.data.count || 0);
       setLoading(false);
     } catch (error) {
@@ -33,11 +38,30 @@ const NotificationDropdown = () => {
     fetchNotifications();
   }, []);
 
-  // Auto-refresh every 30 seconds
+  // Update notifications when real-time notifications arrive
   useEffect(() => {
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    if (realTimeNotifications.length > 0) {
+      // Prepend new notifications to the list
+      setNotifications(prev => {
+        const existingIds = new Set(prev.map(n => n._id));
+        const newNotifications = realTimeNotifications.filter(n => !existingIds.has(n._id));
+        return [...newNotifications, ...prev].slice(0, 50); // Keep max 50 notifications
+      });
+      
+      // Refresh unread count from server
+      fetchUnreadCount();
+    }
+  }, [realTimeNotifications]);
+
+  // Fetch only unread count
+  const fetchUnreadCount = async () => {
+    try {
+      const countRes = await api.get('/notifications/unread-count');
+      setUnreadCount(countRes.data.count || 0);
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -130,12 +154,18 @@ const NotificationDropdown = () => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 hover:bg-primary-light rounded-xl transition-colors group"
+        title={isConnected ? 'Real-time notifications enabled' : 'Connecting...'}
       >
         <Bell size={20} className="text-gray-600 group-hover:text-primary-dark transition-colors" />
         
+        {/* Connection Status Indicator */}
+        <span className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-2 border-white ${
+          isConnected ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'
+        }`} />
+        
         {/* Red Badge */}
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1">
+          <span className="absolute -bottom-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1 border-2 border-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -146,10 +176,24 @@ const NotificationDropdown = () => {
         <div className="absolute right-0 top-full mt-2 w-[360px] max-h-[480px] bg-white border border-[#F5EFE6] rounded-2xl shadow-xl z-50 flex flex-col">
           {/* Header */}
           <div className="p-4 border-b border-[#F5EFE6] flex items-center justify-between">
-            <h3 className="font-semibold text-dark flex items-center gap-2">
-              <Bell size={18} className="text-primary-dark" />
-              Notifications
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-dark flex items-center gap-2">
+                <Bell size={18} className="text-primary-dark" />
+                Notifications
+              </h3>
+              {/* Connection Status */}
+              {isConnected ? (
+                <span className="flex items-center gap-1 text-xs text-green-600" title="Connected">
+                  <Wifi size={12} />
+                  Live
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-xs text-yellow-600" title="Connecting...">
+                  <WifiOff size={12} />
+                  Connecting
+                </span>
+              )}
+            </div>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
