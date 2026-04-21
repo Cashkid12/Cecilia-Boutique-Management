@@ -742,7 +742,9 @@ exports.getAllDashboardData = async (req, res) => {
         amount: sale.totalAmount,
         time: sale.saleDate
       })),
-      lowStockItems: Object.values(groupedLowStock)
+      lowStockItems: Object.values(groupedLowStock),
+      workers: workers || [],
+      expenses: expenses || []
     });
   } catch (error) {
     console.error('[All Dashboard Data Error]:', error);

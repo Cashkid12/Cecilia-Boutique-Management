@@ -155,6 +155,8 @@ const AdminDashboard = () => {
         if (data.recentSales && Array.isArray(data.recentSales)) setDashboardRecentSales(data.recentSales);
         if (data.lowStockItems && Array.isArray(data.lowStockItems)) setLowStockAlerts(data.lowStockItems);
         if (data.bestSellers && Array.isArray(data.bestSellers)) setBestSellers(data.bestSellers);
+        if (data.workers && Array.isArray(data.workers)) setWorkers(data.workers);
+        if (data.expenses && Array.isArray(data.expenses)) setExpenses(data.expenses);
       }
 
       setLastUpdated(new Date());
@@ -738,35 +740,125 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Worker Performance */}
         <div className="card p-6">
-          <h3 className="text-xl font-bold text-dark mb-6 flex items-center gap-2">
-            <Users size={20} />
-            Worker Performance
-          </h3>
-          {workers.length > 0 ? (
-            <div className="space-y-4">
-              {workers.slice(0, 5).map((worker) => (
-                <div
-                  key={worker._id}
-                  className="flex items-center gap-4 p-4 bg-primary-light rounded-xl hover:shadow-md transition-shadow"
-                >
-                  <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-dark font-bold text-lg">
-                    {worker.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-dark">{worker.name}</p>
-                    <p className="text-xs text-gray-600">{worker.email}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-dark">Active</p>
-                    <p className="text-xs text-gray-500">{worker.phone || 'No phone'}</p>
-                  </div>
-                </div>
-              ))}
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-dark flex items-center gap-2">
+              <Users size={20} />
+              Worker Performance Today
+            </h3>
+            <button
+              onClick={() => navigate('/admin/workers')}
+              className="text-sm text-primary-dark font-medium hover:underline"
+            >
+              View All Workers →
+            </button>
+          </div>
+          
+          {workers.length === 0 ? (
+            <div className="text-center py-12">
+              <Users size={64} className="mx-auto mb-4 text-gray-300" />
+              <h4 className="text-lg font-semibold text-dark mb-2">No workers added yet</h4>
+              <p className="text-sm text-gray-500 mb-4">Add workers to track their performance</p>
+              <button
+                onClick={() => navigate('/admin/workers')}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-dark rounded-lg hover:bg-primary-dark transition-colors font-medium"
+              >
+                <UserPlus size={18} />
+                <span>Add Worker</span>
+              </button>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">
-              <Users size={48} className="mx-auto mb-2 opacity-30" />
-              <p>No workers added yet</p>
+            <div className="space-y-4">
+              {(() => {
+                // Calculate average sales for performance bars
+                const workersWithSales = workers.map(w => ({
+                  ...w,
+                  salesCount: w.todaySales?.count || 0,
+                  salesAmount: w.todaySales?.totalSales || 0
+                }));
+                
+                const hasAnySales = workersWithSales.some(w => w.salesCount > 0);
+                
+                if (!hasAnySales) {
+                  return (
+                    <div className="text-center py-12">
+                      <Package size={64} className="mx-auto mb-4 text-gray-300" />
+                      <h4 className="text-lg font-semibold text-dark mb-2">No sales recorded today yet</h4>
+                      <p className="text-sm text-gray-500">Sales will appear here once recorded</p>
+                    </div>
+                  );
+                }
+                
+                const avgSales = workersWithSales.reduce((sum, w) => sum + w.salesAmount, 0) / workersWithSales.length;
+                
+                // Sort by sales amount (highest first)
+                const sortedWorkers = [...workersWithSales].sort((a, b) => b.salesAmount - a.salesAmount);
+                
+                return sortedWorkers.slice(0, 5).map((worker) => {
+                  // Calculate performance level
+                  let performance, performanceColor, barColor;
+                  const percentage = avgSales > 0 ? (worker.salesAmount / avgSales) * 100 : 0;
+                  
+                  if (percentage >= 150) {
+                    performance = 'Excellent';
+                    performanceColor = 'text-green-600';
+                    barColor = 'bg-green-500';
+                  } else if (percentage >= 100) {
+                    performance = 'Good';
+                    performanceColor = 'text-blue-600';
+                    barColor = 'bg-blue-500';
+                  } else if (percentage >= 50) {
+                    performance = 'Average';
+                    performanceColor = 'text-orange-600';
+                    barColor = 'bg-orange-500';
+                  } else {
+                    performance = 'Low';
+                    performanceColor = 'text-gray-600';
+                    barColor = 'bg-gray-500';
+                  }
+                  
+                  const barWidth = Math.min(percentage, 100);
+                  
+                  return (
+                    <div
+                      key={worker._id}
+                      className="p-4 bg-[#F5EFE6] rounded-xl hover:shadow-md transition-all duration-300"
+                    >
+                      {/* Worker Info */}
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-dark font-bold text-lg">
+                          {worker.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-dark">{worker.name}</p>
+                          <div className="flex items-center gap-3 text-xs text-gray-600">
+                            <span className="flex items-center gap-1">
+                              <ShoppingCart size={12} />
+                              Sales: {worker.salesCount}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <DollarSign size={12} />
+                              Amount: KSh {worker.salesAmount.toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className={`text-xs font-semibold ${performanceColor}`}>
+                            {performance}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Performance Bar */}
+                      <div className="w-full h-2 bg-[#F5EFE6] rounded-full overflow-hidden border border-gray-200">
+                        <div
+                          className={`h-full ${barColor} rounded-full transition-all duration-500`}
+                          style={{ width: `${barWidth}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           )}
         </div>
