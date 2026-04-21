@@ -642,8 +642,36 @@ exports.getAllDashboardData = async (req, res) => {
       // Low stock items grouped by category
       Inventory.find({ quantity: { $lt: 5 } }).select('category itemName buyingPrice quantity'),
 
-      // Workers (admin only)
-      req.user.role === 'admin' ? User.find({ role: 'employee', isActive: true }).select('name email phone') : [],
+      // Workers with today's sales (admin only)
+      req.user.role === 'admin' ? (async () => {
+        const workers = await User.find({ role: 'employee', isActive: true }).select('name email phone');
+        
+        // Add today's sales for each worker
+        const workersWithSales = await Promise.all(
+          workers.map(async (worker) => {
+            const todaySales = await Sale.aggregate([
+              { $match: { worker: worker._id, saleDate: { $gte: startOfDay }, status: 'completed' } },
+              {
+                $group: {
+                  _id: null,
+                  totalSales: { $sum: '$totalAmount' },
+                  count: { $sum: 1 }
+                }
+              }
+            ]);
+            
+            return {
+              _id: worker._id,
+              name: worker.name,
+              email: worker.email,
+              phone: worker.phone,
+              todaySales: todaySales[0] || { totalSales: 0, count: 0 }
+            };
+          })
+        );
+        
+        return workersWithSales;
+      })() : [],
 
       // Recent expenses (admin only)
       req.user.role === 'admin' ? Expense.find().sort({ expenseDate: -1 }).limit(5) : [],
