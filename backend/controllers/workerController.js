@@ -2,13 +2,63 @@ const User = require('../models/User');
 const notificationService = require('../services/notificationService');
 const Sale = require('../models/Sale');
 
-// @desc    Get all workers
+// @desc    Get all workers with stats
 // @route   GET /api/workers
 // @access  Private (Admin only)
 exports.getWorkers = async (req, res) => {
   try {
     const workers = await User.find({ role: 'employee' }).select('-password');
-    res.json(workers);
+    
+    // Calculate date ranges
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    
+    // Fetch sales stats for all workers
+    const workersWithStats = await Promise.all(
+      workers.map(async (worker) => {
+        // Today's sales
+        const todaySales = await Sale.aggregate([
+          { $match: { worker: worker._id, saleDate: { $gte: startOfDay } } },
+          {
+            $group: {
+              _id: null,
+              totalSales: { $sum: '$totalAmount' },
+              count: { $sum: 1 }
+            }
+          }
+        ]);
+        
+        // Monthly sales
+        const monthSales = await Sale.aggregate([
+          { $match: { worker: worker._id, saleDate: { $gte: startOfMonth } } },
+          {
+            $group: {
+              _id: null,
+              totalSales: { $sum: '$totalAmount' },
+              count: { $sum: 1 }
+            }
+          }
+        ]);
+        
+        return {
+          _id: worker._id,
+          name: worker.name,
+          email: worker.email,
+          phone: worker.phone,
+          role: worker.role,
+          isActive: worker.isActive,
+          createdAt: worker.createdAt,
+          todaySales: todaySales[0] || { totalSales: 0, count: 0 },
+          monthSales: monthSales[0] || { totalSales: 0, count: 0 }
+        };
+      })
+    );
+    
+    res.json(workersWithStats);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -19,11 +69,12 @@ exports.getWorkers = async (req, res) => {
 // @access  Private (Admin only)
 exports.addWorker = async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, phone, isActive } = req.body;
 
+    // Check if email already exists
     const userExists = await User.findOne({ email });
     if (userExists) {
-      return res.status(400).json({ message: 'Worker already exists' });
+      return res.status(409).json({ message: 'Email already registered' });
     }
 
     const worker = await User.create({
@@ -31,13 +82,22 @@ exports.addWorker = async (req, res) => {
       email,
       password,
       phone,
-      role: 'employee'
+      role: 'employee',
+      isActive: isActive !== undefined ? isActive : true
     });
 
     // Create worker notification
     await notificationService.createWorkerNotification(worker);
 
-    res.status(201).json(worker);
+    res.status(201).json({
+      _id: worker._id,
+      name: worker.name,
+      email: worker.email,
+      phone: worker.phone,
+      role: worker.role,
+      isActive: worker.isActive,
+      createdAt: worker.createdAt
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -86,8 +146,23 @@ exports.deleteWorker = async (req, res) => {
       return res.status(404).json({ message: 'Worker not found' });
     }
 
+    // Check if worker has sales today
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const todaySales = await Sale.findOne({
+      worker: worker._id,
+      saleDate: { $gte: startOfDay }
+    });
+    
+    if (todaySales) {
+      return res.status(400).json({ 
+        message: 'Cannot delete worker with sales today. Please wait until tomorrow or reassign sales.' 
+      });
+    }
+
     await User.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Worker removed' });
+    res.json({ message: 'Worker deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
