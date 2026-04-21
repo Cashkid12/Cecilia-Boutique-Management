@@ -109,6 +109,10 @@ exports.getWorkerPerformance = async (req, res) => {
     const startOfWeek = new Date();
     startOfWeek.setDate(startOfWeek.getDate() - 7);
 
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
     // Today's sales
     const todaySales = await Sale.aggregate([
       { $match: { worker: worker._id, saleDate: { $gte: startOfDay } } },
@@ -126,6 +130,20 @@ exports.getWorkerPerformance = async (req, res) => {
     // Weekly sales
     const weeklySales = await Sale.aggregate([
       { $match: { worker: worker._id, saleDate: { $gte: startOfWeek } } },
+      {
+        $group: {
+          _id: null,
+          totalSales: { $sum: '$totalAmount' },
+          totalProfit: { $sum: '$profit' },
+          totalItems: { $sum: '$quantity' },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Monthly sales
+    const monthlySales = await Sale.aggregate([
+      { $match: { worker: worker._id, saleDate: { $gte: startOfMonth } } },
       {
         $group: {
           _id: null,
@@ -161,6 +179,7 @@ exports.getWorkerPerformance = async (req, res) => {
       },
       today: todaySales[0] || { totalSales: 0, totalProfit: 0, totalItems: 0, count: 0 },
       weekly: weeklySales[0] || { totalSales: 0, totalProfit: 0, totalItems: 0, count: 0 },
+      monthly: monthlySales[0] || { totalSales: 0, totalProfit: 0, totalItems: 0, count: 0 },
       allTime: allTimeSales[0] || { totalSales: 0, totalProfit: 0, totalItems: 0, count: 0 }
     });
   } catch (error) {

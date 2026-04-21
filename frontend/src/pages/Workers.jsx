@@ -22,7 +22,10 @@ import {
   DollarSign,
   Package,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Mail,
+  Phone,
+  Briefcase
 } from 'lucide-react';
 import {
   BarChart,
@@ -89,10 +92,6 @@ const Workers = () => {
       let totalMonthlySales = 0;
       let activeTodayCount = 0;
       
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-      
       for (const worker of response.data) {
         try {
           const perfRes = await workersAPI.getPerformance(worker._id);
@@ -103,21 +102,8 @@ const Workers = () => {
             activeTodayCount++;
           }
           
-          // Calculate monthly sales for this worker
-          try {
-            const { salesAPI } = await import('../utils/api');
-            const monthlyRes = await salesAPI.getAll({
-              startDate: startOfMonth.toISOString(),
-              endDate: new Date().toISOString(),
-              worker: worker._id
-            });
-            const workerMonthlySales = monthlyRes.data.reduce((sum, sale) => {
-              return sum + (sale.totalAmount || 0);
-            }, 0);
-            totalMonthlySales += workerMonthlySales;
-          } catch (error) {
-            console.error(`Error fetching monthly sales for worker ${worker._id}`);
-          }
+          // Add to monthly total
+          totalMonthlySales += perfRes.data?.monthly?.totalSales || 0;
         } catch (error) {
           performanceData[worker._id] = null;
         }
@@ -379,112 +365,118 @@ const Workers = () => {
         </div>
       </div>
 
-      {/* Workers Table */}
-      <div className="card overflow-hidden mb-8">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-primary-light">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-dark uppercase">Worker</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-dark uppercase">Contact</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-dark uppercase">Role</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-dark uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-dark uppercase">Sales Today</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-dark uppercase">Weekly Sales</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-dark uppercase">Joined</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-dark uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredWorkers.map((worker) => {
-                const perf = workerPerformance[worker._id];
-                return (
-                  <tr key={worker._id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-dark font-bold">
-                          {worker.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="font-medium text-dark">{worker.name}</p>
-                          <p className="text-xs text-gray-500">{worker.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-600">{worker.phone || 'N/A'}</td>
-                    <td className="px-4 py-4">
-                      <span className="px-3 py-1 text-xs rounded-full bg-primary-light text-primary-dark font-medium capitalize">
-                        {worker.role}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">{getStatusBadge(worker)}</td>
-                    <td className="px-4 py-4 text-sm font-semibold text-dark">
-                      KSh {perf?.today?.totalSales?.toLocaleString() || 0}
-                    </td>
-                    <td className="px-4 py-4 text-sm font-semibold text-dark">
-                      KSh {perf?.weekly?.totalSales?.toLocaleString() || 0}
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-500">
-                      {new Date(worker.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => viewProfile(worker)}
-                          className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="View Profile"
-                        >
-                          <Eye size={16} className="text-blue-600" />
-                        </button>
-                        <button
-                          onClick={() => handleEdit(worker)}
-                          className="p-2 hover:bg-primary-light rounded-lg transition-colors"
-                          title="Edit"
-                        >
-                          <Edit size={16} className="text-primary-dark" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedWorker(worker);
-                            setShowResetModal(true);
-                          }}
-                          className="p-2 hover:bg-purple-50 rounded-lg transition-colors"
-                          title="Reset Password"
-                        >
-                          <Key size={16} className="text-purple-600" />
-                        </button>
-                        <button
-                          onClick={() => handleToggleStatus(worker)}
-                          className="p-2 hover:bg-orange-50 rounded-lg transition-colors"
-                          title={worker.isActive ? 'Deactivate' : 'Activate'}
-                        >
-                          {worker.isActive ? 
-                            <AlertCircle size={16} className="text-orange-600" /> :
-                            <CheckCircle size={16} className="text-green-600" />
-                          }
-                        </button>
-                        <button
-                          onClick={() => handleDelete(worker._id)}
-                          className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 size={16} className="text-red-600" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        {filteredWorkers.length === 0 && (
-          <div className="text-center py-12 text-gray-500">
-            <Users size={48} className="mx-auto mb-3 opacity-30" />
-            <p>No workers found</p>
-          </div>
-        )}
+      {/* Workers Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+        {filteredWorkers.map((worker) => {
+          const perf = workerPerformance[worker._id];
+          const todaySales = perf?.today?.totalSales || 0;
+          const todayCount = perf?.today?.count || 0;
+          
+          return (
+            <div
+              key={worker._id}
+              className="bg-white rounded-2xl border border-[#F5EFE6] p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group"
+            >
+              {/* Avatar and Status */}
+              <div className="flex items-start justify-between mb-4">
+                <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-dark font-bold text-2xl">
+                  {worker.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                </div>
+                <span
+                  className={`px-3 py-1 text-xs rounded-full font-medium ${
+                    worker.isActive
+                      ? 'bg-green-500 text-white'
+                      : 'bg-gray-500 text-white'
+                  }`}
+                >
+                  {worker.isActive ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+
+              {/* Worker Info */}
+              <div className="text-center mb-4">
+                <h3 className="text-lg font-bold text-dark mb-1">{worker.name}</h3>
+                <p className="text-sm text-gray-600 flex items-center justify-center gap-1 mb-2">
+                  <Briefcase size={14} />
+                  {worker.role === 'employee' ? 'Sales Assistant' : worker.role}
+                </p>
+              </div>
+
+              {/* Contact Info */}
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center gap-2 text-sm text-gray-600 justify-center">
+                  <Mail size={14} className="text-gray-400" />
+                  <span className="truncate">{worker.email}</span>
+                </div>
+                {worker.phone && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600 justify-center">
+                    <Phone size={14} className="text-gray-400" />
+                    <span>{worker.phone}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Stats Box */}
+              <div className="bg-[#F5EFE6] rounded-xl p-3 mb-4">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Today</span>
+                    <span className="font-semibold text-dark">
+                      {todayCount} sale{todayCount !== 1 ? 's' : ''} • KSh {todaySales.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">This Month</span>
+                    <span className="font-semibold text-dark">
+                      {perf?.monthly?.count || 0} sales • KSh {(perf?.monthly?.totalSales || 0).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => viewProfile(worker)}
+                  className="flex-1 py-2 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center justify-center gap-1 text-sm font-medium"
+                  title="View Profile"
+                >
+                  <Eye size={16} />
+                  <span className="hidden sm:inline">View</span>
+                </button>
+                <button
+                  onClick={() => handleEdit(worker)}
+                  className="flex-1 py-2 px-3 bg-primary hover:bg-primary-dark text-dark rounded-lg transition-colors flex items-center justify-center gap-1 text-sm font-medium"
+                  title="Edit"
+                >
+                  <Edit size={16} />
+                  <span className="hidden sm:inline">Edit</span>
+                </button>
+                <button
+                  onClick={() => handleDelete(worker._id)}
+                  className="flex-1 py-2 px-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors flex items-center justify-center gap-1 text-sm font-medium"
+                  title="Delete"
+                >
+                  <Trash2 size={16} />
+                  <span className="hidden sm:inline">Delete</span>
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
+
+      {filteredWorkers.length === 0 && (
+        <div className="text-center py-16 bg-white rounded-2xl border border-[#F5EFE6]">
+          <Users size={64} className="mx-auto mb-4 text-gray-300" />
+          <h3 className="text-lg font-semibold text-dark mb-2">No workers found</h3>
+          <p className="text-gray-500">
+            {searchTerm || statusFilter || roleFilter
+              ? 'Try adjusting your filters'
+              : 'Add your first worker to get started'}
+          </p>
+        </div>
+      )}
 
       {/* Performance Overview */}
       <div className="card p-6">
