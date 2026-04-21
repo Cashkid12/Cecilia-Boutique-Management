@@ -62,6 +62,7 @@ const Workers = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [workerPerformance, setWorkerPerformance] = useState({});
+  const [monthlyStats, setMonthlyStats] = useState({ totalSales: 0, activeToday: 0 });
 
   const [formData, setFormData] = useState({
     name: '',
@@ -85,15 +86,48 @@ const Workers = () => {
       
       // Fetch performance for each worker
       const performanceData = {};
+      let totalMonthlySales = 0;
+      let activeTodayCount = 0;
+      
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      
       for (const worker of response.data) {
         try {
           const perfRes = await workersAPI.getPerformance(worker._id);
           performanceData[worker._id] = perfRes.data;
+          
+          // Count workers active today (recorded sales)
+          if (perfRes.data?.today?.count > 0) {
+            activeTodayCount++;
+          }
+          
+          // Calculate monthly sales for this worker
+          try {
+            const { salesAPI } = await import('../utils/api');
+            const monthlyRes = await salesAPI.getAll({
+              startDate: startOfMonth.toISOString(),
+              endDate: new Date().toISOString(),
+              worker: worker._id
+            });
+            const workerMonthlySales = monthlyRes.data.reduce((sum, sale) => {
+              return sum + (sale.totalAmount || 0);
+            }, 0);
+            totalMonthlySales += workerMonthlySales;
+          } catch (error) {
+            console.error(`Error fetching monthly sales for worker ${worker._id}`);
+          }
         } catch (error) {
           performanceData[worker._id] = null;
         }
       }
+      
       setWorkerPerformance(performanceData);
+      setMonthlyStats({
+        totalSales: totalMonthlySales,
+        activeToday: activeTodayCount
+      });
     } catch (error) {
       toast.error('Failed to load workers');
     } finally {
@@ -286,7 +320,7 @@ const Workers = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <StatCard
           icon={Users}
           title="Total Workers"
@@ -297,30 +331,16 @@ const Workers = () => {
         <StatCard
           icon={UserCheck}
           title="Active Today"
-          value={activeWorkers}
-          subtitle="Currently active"
+          value={monthlyStats.activeToday}
+          subtitle="Recorded sales today"
           color="bg-green-100 text-green-600"
         />
         <StatCard
           icon={TrendingUp}
-          title="Sales Today"
-          value={`KSh ${totalSalesToday.toLocaleString()}`}
-          subtitle="Combined revenue"
+          title="Total Sales This Month"
+          value={`KSh ${monthlyStats.totalSales.toLocaleString()}`}
+          subtitle="All workers combined"
           color="bg-purple-100 text-purple-600"
-        />
-        <StatCard
-          icon={Star}
-          title="Top Performer"
-          value={topPerformer?.name || 'N/A'}
-          subtitle={topPerformer ? `KSh ${topPerformer.sales.toLocaleString()}` : 'No sales yet'}
-          color="bg-yellow-100 text-yellow-600"
-        />
-        <StatCard
-          icon={UserMinus}
-          title="Inactive"
-          value={inactiveWorkers}
-          subtitle="Deactivated"
-          color="bg-gray-100 text-gray-600"
         />
       </div>
 
