@@ -25,7 +25,11 @@ import {
   AlertCircle,
   Mail,
   Phone,
-  Briefcase
+  Briefcase,
+  AlertTriangle,
+  Calendar,
+  BarChart3,
+  ShoppingBag
 } from 'lucide-react';
 import {
   BarChart,
@@ -59,13 +63,17 @@ const Workers = () => {
   const [showModal, setShowModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editingWorker, setEditingWorker] = useState(null);
   const [selectedWorker, setSelectedWorker] = useState(null);
+  const [workerToDelete, setWorkerToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [workerPerformance, setWorkerPerformance] = useState({});
   const [monthlyStats, setMonthlyStats] = useState({ totalSales: 0, activeToday: 0 });
+  const [recentSales, setRecentSales] = useState([]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -247,20 +255,37 @@ const Workers = () => {
       password: '',
       confirmPassword: '',
       phone: worker.phone || '',
-      role: worker.role
+      role: worker.role,
+      isActive: worker.isActive
     });
     setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this worker?')) {
-      try {
-        await workersAPI.delete(id);
-        toast.success('Worker removed');
-        fetchWorkers();
-      } catch (error) {
-        toast.error('Failed to remove worker');
+  const handleDeleteClick = (worker) => {
+    setWorkerToDelete(worker);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!workerToDelete) return;
+
+    setDeleting(true);
+    try {
+      await workersAPI.delete(workerToDelete._id);
+      toast.success('Worker deleted successfully');
+      setShowDeleteModal(false);
+      setWorkerToDelete(null);
+      fetchWorkers();
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Failed to remove worker';
+      
+      if (errorMessage.includes('sales today')) {
+        toast.error('Cannot delete worker with sales today');
+      } else {
+        toast.error(errorMessage);
       }
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -311,10 +336,24 @@ const Workers = () => {
     setSelectedWorker(worker);
     try {
       const perfRes = await workersAPI.getPerformance(worker._id);
+      
+      // Fetch recent sales for this worker
+      try {
+        const { salesAPI } = await import('../utils/api');
+        const salesRes = await salesAPI.getAll({ 
+          worker: worker._id,
+          limit: 10 
+        });
+        setRecentSales(salesRes.data || []);
+      } catch (error) {
+        setRecentSales([]);
+      }
+      
       setSelectedWorker({ ...worker, performance: perfRes.data });
       setShowProfileModal(true);
     } catch (error) {
       setSelectedWorker(worker);
+      setRecentSales([]);
       setShowProfileModal(true);
     }
   };
@@ -546,7 +585,7 @@ const Workers = () => {
                   <span className="hidden sm:inline">Edit</span>
                 </button>
                 <button
-                  onClick={() => handleDelete(worker._id)}
+                  onClick={() => handleDeleteClick(worker)}
                   className="flex-1 py-2 px-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors flex items-center justify-center gap-1 text-sm font-medium"
                   title="Delete"
                 >
@@ -815,7 +854,7 @@ const Workers = () => {
                   ) : (
                     <>
                       {editingWorker ? <Edit size={18} /> : <Plus size={18} />}
-                      <span>{editingWorker ? 'Update Worker' : 'Add Worker'}</span>
+                      <span>{editingWorker ? 'Save Changes' : 'Add Worker'}</span>
                     </>
                   )}
                 </button>
@@ -828,10 +867,13 @@ const Workers = () => {
       {/* Worker Profile Modal */}
       {showProfileModal && selectedWorker && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-dark">Worker Profile</h2>
-              <button onClick={() => setShowProfileModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+              <h2 className="text-2xl font-bold text-dark flex items-center gap-2">
+                <Eye size={24} className="text-blue-600" />
+                Worker Profile
+              </h2>
+              <button onClick={() => setShowProfileModal(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                 <X size={20} />
               </button>
             </div>
@@ -841,73 +883,147 @@ const Workers = () => {
               <div className="p-6 bg-primary-light rounded-xl">
                 <div className="flex items-center gap-4">
                   <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-dark font-bold text-3xl">
-                    {selectedWorker.name.charAt(0).toUpperCase()}
+                    {selectedWorker.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                   </div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-dark">{selectedWorker.name}</h3>
-                    <p className="text-gray-600">{selectedWorker.email}</p>
-                    <div className="flex gap-2 mt-2">
-                      <span className="px-3 py-1 text-xs rounded-full bg-primary text-dark font-medium capitalize">
-                        {selectedWorker.role}
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-dark mb-1">{selectedWorker.name}</h3>
+                    <p className="text-gray-600 flex items-center gap-1 mb-2">
+                      <Mail size={14} />
+                      {selectedWorker.email}
+                    </p>
+                    <div className="flex gap-2 flex-wrap">
+                      <span className="px-3 py-1 text-xs rounded-full bg-primary text-dark font-medium capitalize flex items-center gap-1">
+                        <Briefcase size={12} />
+                        {selectedWorker.role === 'employee' ? 'Sales Assistant' : selectedWorker.role}
                       </span>
                       {getStatusBadge(selectedWorker)}
+                      {selectedWorker.phone && (
+                        <span className="px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-700 font-medium flex items-center gap-1">
+                          <Phone size={12} />
+                          {selectedWorker.phone}
+                        </span>
+                      )}
                     </div>
                   </div>
-                </div>
-              </div>
-
-              {/* Details */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <p className="text-sm text-gray-600 mb-1">Phone</p>
-                  <p className="font-medium text-dark">{selectedWorker.phone || 'N/A'}</p>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <p className="text-sm text-gray-600 mb-1">Join Date</p>
-                  <p className="font-medium text-dark">
-                    {new Date(selectedWorker.createdAt).toLocaleDateString()}
-                  </p>
                 </div>
               </div>
 
               {/* Performance Stats */}
               {selectedWorker.performance && (
-                <div className="p-6 bg-green-50 rounded-xl border-2 border-green-200">
-                  <h4 className="font-bold text-dark mb-4 flex items-center gap-2">
-                    <TrendingUp size={20} className="text-green-600" />
+                <div>
+                  <h4 className="font-bold text-dark mb-4 flex items-center gap-2 text-lg">
+                    <BarChart3 size={20} className="text-primary-dark" />
                     Performance Analytics
                   </h4>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-600 mb-1">Today's Sales</p>
-                      <p className="text-2xl font-bold text-green-600">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {/* Today */}
+                    <div className="p-4 bg-green-50 rounded-xl border-2 border-green-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calendar size={16} className="text-green-600" />
+                        <p className="text-sm text-gray-600 font-medium">Today</p>
+                      </div>
+                      <p className="text-2xl font-bold text-green-600 mb-1">
                         KSh {selectedWorker.performance.today?.totalSales?.toLocaleString() || 0}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {selectedWorker.performance.today?.count || 0} transactions
+                        {selectedWorker.performance.today?.count || 0} sales • {selectedWorker.performance.today?.totalItems || 0} items
                       </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-600 mb-1">Weekly Sales</p>
-                      <p className="text-2xl font-bold text-blue-600">
+
+                    {/* This Week */}
+                    <div className="p-4 bg-blue-50 rounded-xl border-2 border-blue-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calendar size={16} className="text-blue-600" />
+                        <p className="text-sm text-gray-600 font-medium">This Week</p>
+                      </div>
+                      <p className="text-2xl font-bold text-blue-600 mb-1">
                         KSh {selectedWorker.performance.weekly?.totalSales?.toLocaleString() || 0}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {selectedWorker.performance.weekly?.count || 0} transactions
+                        {selectedWorker.performance.weekly?.count || 0} sales • {selectedWorker.performance.weekly?.totalItems || 0} items
                       </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-600 mb-1">All Time</p>
-                      <p className="text-2xl font-bold text-purple-600">
+
+                    {/* This Month */}
+                    <div className="p-4 bg-purple-50 rounded-xl border-2 border-purple-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calendar size={16} className="text-purple-600" />
+                        <p className="text-sm text-gray-600 font-medium">This Month</p>
+                      </div>
+                      <p className="text-2xl font-bold text-purple-600 mb-1">
+                        KSh {selectedWorker.performance.monthly?.totalSales?.toLocaleString() || 0}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {selectedWorker.performance.monthly?.count || 0} sales • {selectedWorker.performance.monthly?.totalItems || 0} items
+                      </p>
+                    </div>
+
+                    {/* All Time */}
+                    <div className="p-4 bg-orange-50 rounded-xl border-2 border-orange-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp size={16} className="text-orange-600" />
+                        <p className="text-sm text-gray-600 font-medium">All Time</p>
+                      </div>
+                      <p className="text-2xl font-bold text-orange-600 mb-1">
                         KSh {selectedWorker.performance.allTime?.totalSales?.toLocaleString() || 0}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {selectedWorker.performance.allTime?.totalItems || 0} items sold
+                        {selectedWorker.performance.allTime?.count || 0} sales • {selectedWorker.performance.allTime?.totalItems || 0} items
                       </p>
                     </div>
                   </div>
                 </div>
               )}
+
+              {/* Recent Sales */}
+              <div>
+                <h4 className="font-bold text-dark mb-4 flex items-center gap-2 text-lg">
+                  <ShoppingBag size={20} className="text-primary-dark" />
+                  Recent Sales (Last 10)
+                </h4>
+                {recentSales.length > 0 ? (
+                  <div className="bg-white rounded-xl border border-[#F5EFE6] overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-primary-light">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-dark uppercase">Date</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-dark uppercase">Items</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-dark uppercase">Total</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-dark uppercase">Payment</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {recentSales.map((sale) => (
+                            <tr key={sale._id} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-4 py-3 text-sm text-gray-600">
+                                {new Date(sale.saleDate).toLocaleDateString()} {new Date(sale.saleDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-dark font-medium">
+                                {sale.items?.length || 0} items
+                              </td>
+                              <td className="px-4 py-3 text-sm font-bold text-dark">
+                                KSh {sale.totalAmount?.toLocaleString() || 0}
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700 font-medium capitalize">
+                                  {sale.paymentMethod || 'cash'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+                    <ShoppingBag size={48} className="mx-auto mb-3 text-gray-300" />
+                    <p className="text-gray-500 font-medium">No sales recorded yet</p>
+                    <p className="text-sm text-gray-400 mt-1">Sales will appear here once this worker starts selling</p>
+                  </div>
+                )}
+              </div>
 
               <div className="flex gap-3">
                 <button
@@ -972,6 +1088,87 @@ const Workers = () => {
                   Reset Password
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && workerToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-dark flex items-center gap-2">
+                <AlertTriangle size={24} className="text-red-500" />
+                Delete Worker
+              </h2>
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setWorkerToDelete(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <div className="p-4 bg-red-50 rounded-xl border-2 border-red-200 mb-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-dark font-bold text-lg">
+                    {workerToDelete.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-dark">{workerToDelete.name}</h3>
+                    <p className="text-sm text-gray-600">{workerToDelete.email}</p>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-dark font-medium mb-2">
+                Are you sure you want to delete {workerToDelete.name}?
+              </p>
+              <div className="space-y-2 text-sm text-gray-600">
+                <p className="flex items-start gap-2">
+                  <AlertCircle size={16} className="text-red-500 mt-0.5 flex-shrink-0" />
+                  <span>This action cannot be undone.</span>
+                </p>
+                <p className="flex items-start gap-2">
+                  <CheckCircle size={16} className="text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>Past sales records will be preserved.</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setWorkerToDelete(null);
+                }}
+                disabled={deleting}
+                className="flex-1 btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                disabled={deleting}
+                className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 disabled:bg-red-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center justify-center gap-2 font-medium"
+              >
+                {deleting ? (
+                  <>
+                    <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={18} />
+                    <span>Delete Worker</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
