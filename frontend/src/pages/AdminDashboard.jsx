@@ -32,7 +32,13 @@ import {
   PackagePlus,
   Receipt,
   Trophy,
-  UserPlus
+  UserPlus,
+  Home,
+  Zap,
+  Droplet,
+  Bus,
+  Megaphone,
+  CircleDollarSign
 } from 'lucide-react';
 import {
   LineChart,
@@ -865,39 +871,107 @@ const AdminDashboard = () => {
 
         {/* Expenses Summary */}
         <div className="card p-6">
-          <h3 className="text-xl font-bold text-dark mb-6 flex items-center gap-2">
-            <Wallet size={20} />
-            Recent Expenses
-          </h3>
-          {expenses.length > 0 ? (
-            <div className="space-y-4">
-              {expenses.slice(0, 5).map((expense) => (
-                <div
-                  key={expense._id}
-                  className="flex items-center justify-between p-4 bg-primary-light rounded-xl"
-                >
-                  <div>
-                    <p className="font-medium text-dark text-sm">{expense.category}</p>
-                    <p className="text-xs text-gray-600">{expense.description}</p>
-                  </div>
-                  <p className="font-semibold text-red-600">
-                    -KSh {(expense.amount || 0).toLocaleString()}
-                  </p>
-                </div>
-              ))}
-              <div className="pt-4 border-t border-primary">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-dark flex items-center gap-2">
+              <Wallet size={20} />
+              Recent Expenses
+            </h3>
+            <button
+              onClick={() => navigate('/admin/expenses')}
+              className="text-sm text-primary-dark font-medium hover:underline"
+            >
+              View All Expenses →
+            </button>
+          </div>
+          
+          {expenses.length === 0 ? (
+            <div className="text-center py-12">
+              <Wallet size={64} className="mx-auto mb-4 text-gray-300" />
+              <h4 className="text-lg font-semibold text-dark mb-2">No expenses recorded yet</h4>
+              <p className="text-sm text-gray-500 mb-4">Add expenses to track your costs</p>
+              <button
+                onClick={() => navigate('/admin/expenses')}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-dark rounded-lg hover:bg-primary-dark transition-colors font-medium"
+              >
+                <Plus size={18} />
+                <span>Add Expense</span>
+              </button>
+            </div>
+          ) : (
+            <div>
+              <div className="space-y-3">
+                {expenses.slice(0, 5).map((expense) => {
+                  // Category icon mapping
+                  const categoryIcons = {
+                    'Rent': Home,
+                    'Utilities': Zap,
+                    'Electricity': Zap,
+                    'Water': Droplet,
+                    'Transport': Bus,
+                    'Supplies': Package,
+                    'Marketing': Megaphone,
+                    'Salaries': Users,
+                    'Other': CircleDollarSign
+                  };
+                  
+                  const Icon = categoryIcons[expense.category] || CircleDollarSign;
+                  
+                  // Smart date formatting
+                  const expenseDate = new Date(expense.expenseDate || expense.createdAt);
+                  const now = new Date();
+                  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                  const yesterday = new Date(today);
+                  yesterday.setDate(yesterday.getDate() - 1);
+                  const expenseDay = new Date(expenseDate.getFullYear(), expenseDate.getMonth(), expenseDate.getDate());
+                  
+                  let dateDisplay;
+                  const timeStr = expenseDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  
+                  if (expenseDay.getTime() === today.getTime()) {
+                    dateDisplay = `Today • ${timeStr}`;
+                  } else if (expenseDay.getTime() === yesterday.getTime()) {
+                    dateDisplay = `Yesterday • ${timeStr}`;
+                  } else {
+                    const dateStr = expenseDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                    dateDisplay = `${dateStr} • ${timeStr}`;
+                  }
+                  
+                  return (
+                    <div
+                      key={expense._id}
+                      className="p-4 bg-[#F5EFE6] rounded-xl hover:shadow-md transition-all duration-300"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-start gap-3 flex-1">
+                          <div className="p-2 bg-white rounded-lg">
+                            <Icon size={18} className="text-primary-dark" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-dark text-sm truncate">{expense.category}</p>
+                            {expense.description && (
+                              <p className="text-xs text-gray-600 mt-0.5 truncate">{expense.description}</p>
+                            )}
+                            <p className="text-xs text-gray-500 mt-1">{dateDisplay}</p>
+                          </div>
+                        </div>
+                        <p className="font-bold text-red-600 text-sm flex-shrink-0 ml-2">
+                          -KSh {(expense.amount || 0).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Monthly Total */}
+              <div className="mt-4 pt-4 border-t border-[#F5EFE6]">
                 <div className="flex items-center justify-between">
-                  <p className="font-bold text-dark">Total Expenses</p>
+                  <p className="text-sm font-medium text-gray-600">Total This Month</p>
                   <p className="text-xl font-bold text-red-600">
                     -KSh {expenses.reduce((sum, exp) => sum + (exp.amount || 0), 0).toLocaleString()}
                   </p>
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <Wallet size={48} className="mx-auto mb-2 opacity-30" />
-              <p>No expenses recorded</p>
             </div>
           )}
         </div>
