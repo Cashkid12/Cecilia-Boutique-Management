@@ -73,10 +73,13 @@ const Workers = () => {
     password: '',
     confirmPassword: '',
     phone: '',
-    role: 'employee'
+    role: 'employee',
+    isActive: true
   });
 
   const [newPassword, setNewPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     fetchWorkers();
@@ -121,31 +124,118 @@ const Workers = () => {
     }
   };
 
+  const validateForm = () => {
+    const errors = {};
+
+    // Full Name validation
+    if (!formData.name || formData.name.trim().length < 3) {
+      errors.name = 'Name must be at least 3 characters';
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email) {
+      errors.email = 'Email is required';
+    } else if (!emailRegex.test(formData.email)) {
+      errors.email = 'Please enter a valid email';
+    }
+
+    // Phone validation (optional but must be valid if provided)
+    if (formData.phone && formData.phone.trim()) {
+      const phoneRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/;
+      if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
+        errors.phone = 'Please enter a valid phone number';
+      }
+    }
+
+    // Role validation
+    if (!formData.role) {
+      errors.role = 'Role is required';
+    }
+
+    // Password validation (only for new workers)
+    if (!editingWorker) {
+      if (!formData.password) {
+        errors.password = 'Password is required';
+      } else if (formData.password.length < 6) {
+        errors.password = 'Password must be at least 6 characters';
+      }
+
+      if (formData.password !== formData.confirmPassword) {
+        errors.confirmPassword = 'Passwords do not match';
+      }
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
+    // Validate form
+    if (!validateForm()) {
+      toast.error('Please fix the form errors');
       return;
     }
 
-    if (formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters');
-      return;
-    }
+    setSubmitting(true);
 
     try {
       if (editingWorker) {
-        await workersAPI.update(editingWorker._id, formData);
+        // Update existing worker
+        const updateData = {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          role: formData.role,
+          isActive: formData.isActive
+        };
+
+        // Only include password if provided
+        if (formData.password) {
+          if (formData.password.length < 6) {
+            toast.error('Password must be at least 6 characters');
+            setSubmitting(false);
+            return;
+          }
+          if (formData.password !== formData.confirmPassword) {
+            toast.error('Passwords do not match');
+            setSubmitting(false);
+            return;
+          }
+          updateData.password = formData.password;
+        }
+
+        await workersAPI.update(editingWorker._id, updateData);
         toast.success('Worker updated successfully');
       } else {
-        await workersAPI.create(formData);
-        toast.success('Worker account created successfully');
+        // Create new worker
+        await workersAPI.create({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          role: formData.role,
+          password: formData.password,
+          isActive: formData.isActive
+        });
+        toast.success('Worker added successfully');
       }
+      
       fetchWorkers();
       closeModal();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Operation failed');
+      const errorMessage = error.response?.data?.message || 'Operation failed';
+      
+      // Handle specific error cases
+      if (errorMessage.includes('email') || errorMessage.includes('exists')) {
+        setFormErrors({ email: 'Email already registered' });
+        toast.error('Email already registered');
+      } else {
+        toast.error(errorMessage);
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -204,13 +294,16 @@ const Workers = () => {
   const closeModal = () => {
     setShowModal(false);
     setEditingWorker(null);
+    setFormErrors({});
+    setSubmitting(false);
     setFormData({
       name: '',
       email: '',
       password: '',
       confirmPassword: '',
       phone: '',
-      role: 'employee'
+      role: 'employee',
+      isActive: true
     });
   };
 
@@ -540,91 +633,191 @@ const Workers = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fade-in">
           <div className="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-dark">
+              <h2 className="text-2xl font-bold text-dark flex items-center gap-2">
+                {editingWorker ? <Edit size={24} /> : <Plus size={24} />}
                 {editingWorker ? 'Edit Worker' : 'Add New Worker'}
               </h2>
-              <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-lg">
+              <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Full Name */}
                 <div>
-                  <label className="block text-sm font-medium text-dark mb-2">Full Name</label>
+                  <label className="block text-sm font-medium text-dark mb-2">
+                    Full Name <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="input-field"
-                    required
+                    className={`input-field ${formErrors.name ? 'border-red-500' : ''}`}
+                    placeholder="John Mwangi"
                   />
+                  {formErrors.name && (
+                    <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle size={14} />
+                      {formErrors.name}
+                    </p>
+                  )}
                 </div>
+
+                {/* Email */}
                 <div>
-                  <label className="block text-sm font-medium text-dark mb-2">Email</label>
+                  <label className="block text-sm font-medium text-dark mb-2">
+                    Email Address <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="input-field"
-                    required
+                    className={`input-field ${formErrors.email ? 'border-red-500' : ''}`}
+                    placeholder="john@example.com"
                   />
+                  {formErrors.email && (
+                    <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle size={14} />
+                      {formErrors.email}
+                    </p>
+                  )}
                 </div>
+
+                {/* Phone */}
                 <div>
-                  <label className="block text-sm font-medium text-dark mb-2">Phone</label>
+                  <label className="block text-sm font-medium text-dark mb-2">
+                    Phone Number
+                  </label>
                   <input
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="input-field"
+                    className={`input-field ${formErrors.phone ? 'border-red-500' : ''}`}
+                    placeholder="+254 712 345 678"
                   />
+                  {formErrors.phone && (
+                    <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle size={14} />
+                      {formErrors.phone}
+                    </p>
+                  )}
                 </div>
+
+                {/* Role */}
                 <div>
-                  <label className="block text-sm font-medium text-dark mb-2">Role</label>
+                  <label className="block text-sm font-medium text-dark mb-2">
+                    Role <span className="text-red-500">*</span>
+                  </label>
                   <select
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                     className="input-field"
                   >
-                    <option value="employee">Employee</option>
+                    <option value="employee">Sales Assistant</option>
                     <option value="manager">Manager</option>
-                    <option value="cashier">Cashier</option>
                   </select>
                 </div>
+
+                {/* Password */}
                 <div>
                   <label className="block text-sm font-medium text-dark mb-2">
-                    Password {!editingWorker && '*'}
+                    Password {!editingWorker && <span className="text-red-500">*</span>}
                   </label>
                   <input
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="input-field"
+                    className={`input-field ${formErrors.password ? 'border-red-500' : ''}`}
                     placeholder={editingWorker ? 'Leave blank to keep current' : 'Minimum 6 characters'}
-                    required={!editingWorker}
                   />
+                  {formErrors.password && (
+                    <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle size={14} />
+                      {formErrors.password}
+                    </p>
+                  )}
+                  {!editingWorker && (
+                    <p className="mt-1 text-xs text-gray-500">Minimum 6 characters</p>
+                  )}
                 </div>
+
+                {/* Confirm Password */}
                 <div>
                   <label className="block text-sm font-medium text-dark mb-2">
-                    Confirm Password {!editingWorker && '*'}
+                    Confirm Password {!editingWorker && <span className="text-red-500">*</span>}
                   </label>
                   <input
                     type="password"
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    className="input-field"
+                    className={`input-field ${formErrors.confirmPassword ? 'border-red-500' : ''}`}
                     placeholder="Re-enter password"
-                    required={!editingWorker}
                   />
+                  {formErrors.confirmPassword && (
+                    <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle size={14} />
+                      {formErrors.confirmPassword}
+                    </p>
+                  )}
                 </div>
               </div>
 
+              {/* Status Toggle (Only for new workers) */}
+              {!editingWorker && (
+                <div>
+                  <label className="block text-sm font-medium text-dark mb-3">Status</label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="status"
+                        checked={formData.isActive === true}
+                        onChange={() => setFormData({ ...formData, isActive: true })}
+                        className="w-4 h-4 text-green-600"
+                      />
+                      <span className="text-sm text-dark">Active</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="status"
+                        checked={formData.isActive === false}
+                        onChange={() => setFormData({ ...formData, isActive: false })}
+                        className="w-4 h-4 text-gray-600"
+                      />
+                      <span className="text-sm text-dark">Inactive</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
               <div className="flex gap-3 justify-end pt-4 border-t">
-                <button type="button" onClick={closeModal} className="btn-secondary">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  disabled={submitting}
+                  className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary">
-                  {editingWorker ? 'Update' : 'Create'} Worker
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {submitting ? (
+                    <>
+                      <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                      <span>{editingWorker ? 'Updating...' : 'Adding...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      {editingWorker ? <Edit size={18} /> : <Plus size={18} />}
+                      <span>{editingWorker ? 'Update Worker' : 'Add Worker'}</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
